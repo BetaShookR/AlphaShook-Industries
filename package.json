@@ -1,0 +1,14 @@
+{
+  "name": "alphashook",
+  "private": true,
+  "packageManager": "pnpm@12.16.1",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "pnpm --filter @alphashook/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @alphashook/api db:generate",
+    "db:migrate": "pnpm --filter @alphashook/api db:migrate"
+  }
+}

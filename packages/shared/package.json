@@ -1,0 +1,16 @@
+{
+  "name": "@alphashook/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"(sin tests)\""
+  },
+  "dependencies": { "zod": "^3.25.0" },
+  "devDependencies": { "@alphashook/config": "workspace:*", "typescript": "^5.9.0" }
+}
