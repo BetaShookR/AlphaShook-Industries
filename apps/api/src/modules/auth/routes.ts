@@ -39,6 +39,16 @@ export function makeRequireAuth(auth: AuthService) {
   };
 }
 
+/** preHandler opcional: si hay sesión válida completa req.auth; si no, sigue como anónimo. */
+export function makeOptionalAuth(auth: AuthService) {
+  return async (req: FastifyRequest) => {
+    const h = req.headers.authorization;
+    const token = h?.startsWith("Bearer ") ? h.slice(7) : req.cookies[SESSION_COOKIE];
+    const ctx = token ? await auth.authenticate(token) : null;
+    if (ctx) req.auth = ctx;
+  };
+}
+
 function parse<T>(schema: ZodType<T, ZodTypeDef, unknown>, data: unknown): T {
   const r = schema.safeParse(data);
   if (!r.success) {

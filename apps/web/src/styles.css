@@ -20,7 +20,7 @@
 body { margin: 0; min-height: 100vh; background: radial-gradient(1200px 500px at 80% -10%, #2a1608 0%, transparent 60%), var(--bg); }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
-button, input, select { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 
 .container { width: min(1200px, 100% - 32px); margin-inline: auto; }
@@ -40,8 +40,8 @@ main.container { padding-block: 28px 64px; }
 .account { display: flex; gap: 8px; align-items: center; }
 
 /* Forms & buttons */
-input, select { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 42px; }
-input:focus, select:focus { border-color: var(--accent); outline: none; }
+input, select, textarea { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 42px; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; min-height: 42px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 600; white-space: nowrap; }
 .btn:hover { background: var(--surface-2); }
 .btn.primary { background: linear-gradient(135deg, var(--accent), #ff8a3d); border-color: transparent; color: #1a0a00; }
@@ -153,11 +153,41 @@ table.versions th { color: var(--muted); font-weight: 600; }
   .hero { grid-template-columns: 1fr; }
   .hero .art { aspect-ratio: 16 / 9; }
 }
-@media (max-width: 720px) {
+@media (max-width: 1100px) {
   .header .container { flex-wrap: wrap; height: auto; padding-block: 10px; }
   .search { order: 3; flex-basis: 100%; max-width: none; }
   .nav { order: 4; flex-basis: 100%; overflow-x: auto; }
   .account { margin-left: auto; }
+}
+@media (max-width: 720px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .product h1, .hero h1, .welcome h1 { font-size: 1.6rem; }
 }
+
+/* Comunidad (Etapa 4b) */
+textarea { width: 100%; min-height: 110px; resize: vertical; line-height: 1.5; }
+.stars { color: var(--accent-2); letter-spacing: 2px; white-space: nowrap; }
+.star-input { display: flex; gap: 4px; }
+.star-input button { background: none; border: 0; padding: 2px; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--line); }
+.star-input button.on { color: var(--accent-2); }
+.rating-summary { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; padding: 18px; }
+.rating-summary .avg { font-size: 2.4rem; font-weight: 800; text-align: center; }
+.bars { display: grid; gap: 4px; font-size: 0.85rem; }
+.bars .row { display: grid; grid-template-columns: 24px 1fr 32px; gap: 8px; align-items: center; color: var(--muted); }
+.bars .bar { height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
+.bars .bar span { display: block; height: 100%; background: var(--accent-2); }
+.post { padding: 16px; display: grid; gap: 8px; }
+.post-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 0.9rem; color: var(--muted); }
+.post-head a { color: var(--accent-2); font-weight: 600; }
+.post-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.stack { display: grid; gap: 12px; }
+.list-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; flex-wrap: wrap; }
+.list-row:hover { border-color: var(--accent); }
+.list-row .title { font-weight: 700; overflow-wrap: anywhere; }
+.badge.mod { background: rgb(255 176 58 / 0.15); color: var(--accent-2); }
+.profile-head { padding: 22px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: grid; place-items: center; font-size: 2rem; font-weight: 900; color: #1a0a00; flex: none; }
+.mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.mini-grid .cover { font-size: 1.6rem; border-radius: 8px; }
+.mini-grid a { display: grid; gap: 6px; font-size: 0.88rem; }
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; }

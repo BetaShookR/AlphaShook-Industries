@@ -9,6 +9,7 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default(""),
   PUBLIC_WEB_URL: z.string().url().default("http://localhost:5173"),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  COMMUNITY_WRITE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
   /** Carpeta del build de la tienda web; si existe, la API también la sirve (un solo servicio). */
   WEB_DIST_DIR: z.string().optional(),
   MAIL_PROVIDER: z.enum(["log", "brevo"]).default("log"),

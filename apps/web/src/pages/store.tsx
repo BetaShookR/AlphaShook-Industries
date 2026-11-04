@@ -1,3 +1,4 @@
+import { ReviewsSection } from "./community";
 import { Fragment, useState, type FormEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, formatBytes, PLATFORM_LABEL } from "../api";
@@ -208,6 +209,8 @@ export function ProductPage() {
             </table>
           </section>
         )}
+        <ReviewsSection slug={p.slug} />
+        <p className="muted"><Link to={`/community/${p.slug}`}>Ir al foro de {p.name} →</Link></p>
       </div>
 
       <aside className="card side">

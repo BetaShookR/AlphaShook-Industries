@@ -1,3 +1,4 @@
+import { ProfileEditor } from "./community";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { api } from "../api";
@@ -200,6 +201,11 @@ export function AccountPage() {
             {msg && <span className="muted">{msg}</span>}
           </div>
         )}
+      </section>
+
+      <section className="card section" style={{ padding: 20 }}>
+        <h2 style={{ marginTop: 0 }}>Perfil público</h2>
+        <ProfileEditor />
       </section>
 
       <section className="section">

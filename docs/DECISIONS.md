@@ -25,3 +25,7 @@
 | 21 | 2026-11-03 | `requireAuth` reutilizable (`makeRequireAuth`) para todos los módulos | Un solo punto de autenticación Bearer/cookie |
 | 22 | 2026-11-03 | Producción: un solo servicio Render (API sirve la web) + PostgreSQL en Neon | Mismo origen para la cookie; Postgres gratis de Render vence a los 30 días |
 | 23 | 2026-11-03 | Correo con Brevo vía API HTTP (sin SDK) | Plan gratis y permite remitente verificado sin dominio propio |
+| 24 | 2026-11-04 | Reseñas: valoración 1–5 + texto, una por usuario/producto, solo con el producto en la biblioteca | Evita reseñas de quien no tiene el juego |
+| 25 | 2026-11-04 | Perfil en tabla `profiles` aparte; visibilidad public/friends/private aplica a biblioteca y bio (las reseñas son públicas) | No tocar `users`; privacidad simple |
+| 26 | 2026-11-04 | Foros: uno general + uno por producto publicado; moderación oculta (no borra) | Sin categorías manuales hasta el panel admin; se conserva evidencia |
+| 27 | 2026-11-04 | Moderadores = rol `moderator`/`admin` existente; límite de escritura por IP en comunidad | Reutiliza roles y rate limit ya instalados |

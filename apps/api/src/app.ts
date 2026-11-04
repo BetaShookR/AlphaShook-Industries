@@ -7,7 +7,8 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import fastifyStatic from "@fastify/static";
 import { BrevoMailer, LogMailer, type Mailer } from "./lib/mailer.js";
-import { authRoutes, makeRequireAuth } from "./modules/auth/routes.js";
+import { authRoutes, makeOptionalAuth, makeRequireAuth } from "./modules/auth/routes.js";
+import { communityRoutes } from "./modules/community/routes.js";
 import { libraryRoutes } from "./modules/library/routes.js";
 import { catalogRoutes } from "./modules/catalog/routes.js";
 import { createAuthService } from "./modules/auth/service.js";
@@ -69,6 +70,13 @@ export function buildApp(env: Env, db: Database, deps: AppDeps = {}) {
   });
   app.register(catalogRoutes, { prefix: "/v1", db });
   app.register(libraryRoutes, { prefix: "/v1", db, requireAuth: makeRequireAuth(auth) });
+  app.register(communityRoutes, {
+    prefix: "/v1",
+    db,
+    requireAuth: makeRequireAuth(auth),
+    optionalAuth: makeOptionalAuth(auth),
+    writeLimitMax: env.COMMUNITY_WRITE_LIMIT_MAX,
+  });
 
   // Producción: la misma API sirve la tienda web (mismo origen → cookie de sesión sin CORS).
   const webDir = env.WEB_DIST_DIR ? resolve(env.WEB_DIST_DIR) : null;

@@ -6,6 +6,7 @@ import { SessionProvider, useSession } from "./hooks";
 import { Header } from "./components/ui";
 import { CatalogPage, HomePage, ProductPage } from "./pages/store";
 import { LibraryPage, WishlistPage } from "./pages/library";
+import { BoardPage, ForumsPage, FriendsPage, ProfilePage, ThreadPage } from "./pages/community";
 import { AccountPage, ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, VerifyEmailPage } from "./pages/account";
 
 function Footer() {
@@ -34,6 +35,11 @@ function App() {
           <Route path="/account" element={<AccountPage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/community" element={<ForumsPage />} />
+          <Route path="/community/t/:id" element={<ThreadPage />} />
+          <Route path="/community/:board" element={<BoardPage />} />
+          <Route path="/u/:username" element={<ProfilePage />} />
+          <Route path="/friends" element={<FriendsPage />} />
           <Route path="*" element={<div className="empty">Página no encontrada. <Link to="/">Volver al inicio</Link></div>} />
         </Routes>
       </main>

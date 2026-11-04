@@ -1,6 +1,6 @@
 # PROJECT_STATUS — AlphaShook
 
-Última actualización: 2026-11-03
+Última actualización: 2026-11-04
 
 | Etapa | Estado |
 |---|---|
@@ -9,7 +9,7 @@
 | 2. Cuentas (backend) | ✅ Terminada — verificada en Windows 10 + PG 17.11 (18/18 tests) |
 | 3. Catálogo y tienda web | ✅ Terminada — verificada en Windows (tienda funcionando con `iniciar.bat`) |
 | 4. Biblioteca, productos gratuitos y lista de deseos | ✅ Terminada — verificada en Windows (biblioteca y catálogo con juegos reales) |
-| 4b. Comunidad: foros, reseñas y valoraciones, perfiles públicos, amigos | ⏳ Pendiente de autorización |
+| 4b. Comunidad: foros, reseñas y valoraciones, perfiles públicos, amigos | ✅ Terminada — probada en Linux/PG16; falta verificar en Windows y publicar |
 | 5–10 | ⏳ Pendientes (panel de administración: Etapa 9, se respeta el orden) |
 
 ## Etapa 1 — Terminado
@@ -58,6 +58,21 @@
 - Linux/PG16: 34/34 tests de API (8 nuevos de biblioteca/deseados, incluida sincronización launcher↔web).
 - E2E en navegador 10/10: invitado, registro, biblioteca vacía, deseados, agregar gratis, quitar de deseados al adquirir, versiones, filtros, búsqueda, móvil.
 
+## Etapa 4b — Terminado
+- BD (`0007_community`): `profiles` (nombre visible, bio, visibilidad public/friends/private), `reviews` (1–5 + texto, una por usuario y producto, ocultable), `friendships` (un vínculo por par, pending/accepted), `forum_threads` (foro general o por producto; cerrar/ocultar), `forum_posts`.
+- API `/v1`:
+  - Reseñas: `GET /products/:slug/reviews` (resumen promedio + distribución, paginado, `mine`, `canReview`), `PUT|DELETE /products/:slug/review`. Solo con el producto en la biblioteca (403 `not_owned`).
+  - Perfiles: `GET /users/:username` (sin correo; biblioteca y bio según privacidad), `GET|PATCH /me/profile`.
+  - Amigos: `GET /friends`, `POST /friends/:username` (si el otro ya pidió, acepta), `POST /friends/:username/accept`, `DELETE /friends/:username` (eliminar/cancelar/rechazar). Máx. 100 solicitudes pendientes.
+  - Foros: `GET /forums`, `GET /forums/:board/threads` (`general` o slug), `POST /forums/threads`, `GET /forums/threads/:id`, `POST /forums/threads/:id/posts`, `PATCH /forums/posts/:id` (solo autor).
+  - Moderación (rol moderator/admin): `PATCH /mod/reviews/:id`, `/mod/threads/:id` (ocultar/cerrar), `/mod/posts/:id`.
+  - Límite anti-spam en escrituras: `COMMUNITY_WRITE_LIMIT_MAX` (20/min por IP).
+- Web: sección Reseñas en cada producto, Comunidad (`/community`, foros y temas), perfil público (`/u/:usuario`), Amigos (`/friends`), edición de perfil en Mi cuenta. Encabezado ajustado para 6 enlaces.
+
+## Probado (Etapa 4b)
+- Linux/PG16: typecheck y build OK; 44/44 tests de API (10 nuevos: reseñas, privacidad, amigos, foros, moderación, permisos).
+- E2E en navegador (Playwright) con 2 cuentas: editar perfil, reseña bloqueada sin biblioteca, agregar y reseñar, crear tema, responder, privacidad "solo amigos" antes/después de aceptar, móvil 390 px y 800/1000/1280 px sin scroll horizontal.
+
 ## Despliegue (preparado, sin publicar)
 - La API sirve la tienda web en producción (`WEB_DIST_DIR`, `@fastify/static`), con fallback de rutas de la SPA.
 - `start:prod`: aplica migraciones y arranca (sin `.env`).
@@ -67,6 +82,8 @@
 
 ## Pendiente
 - Publicar: crear Neon + Brevo + repo privado + Blueprint en Render (pasos en `docs/DEPLOY.md`).
+- Comunidad: verificar en Windows (`iniciar.bat`) y publicar con `subir-a-github.bat` (Render migra solo).
+- Comunidad: asignar rol moderador requiere SQL hasta el panel admin (Etapa 9); sin avatares (requiere almacenamiento R2); sin notificaciones de amistad/respuestas (launcher/Android).
 - Biblioteca: versiones instaladas y estado de descarga → requieren el launcher (Etapa 6).
 - Home: populares, promociones, patrocinados y recomendaciones (requieren estadísticas/etapa 9).
 - Adquisición y biblioteca (Etapa 4).

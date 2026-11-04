@@ -1,6 +1,7 @@
 import { sql, type SQL } from "drizzle-orm";
 import {
   bigint,
+  check,
   boolean,
   customType,
   date,
@@ -225,4 +226,86 @@ export const wishlistItems = pgTable(
     addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.productId] })],
+);
+
+// ───────────── Comunidad (Etapa 4b) ─────────────
+export const profileVisibility = pgEnum("profile_visibility", ["public", "friends", "private"]);
+export const friendshipStatus = pgEnum("friendship_status", ["pending", "accepted"]);
+
+/** Perfil público (1:1 con users). Se crea al primer uso; sin fila = valores por defecto. */
+export const profiles = pgTable("profiles", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  displayName: text("display_name"),
+  bio: text("bio"),
+  visibility: profileVisibility("visibility").notNull().default("public"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Reseña + valoración (1–5). Solo de productos en la biblioteca del autor; una por usuario y producto. */
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+    body: text("body").notNull(),
+    hidden: boolean("hidden").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("reviews_user_product_idx").on(t.userId, t.productId),
+    index("reviews_product_idx").on(t.productId, t.createdAt),
+    check("reviews_rating_chk", sql`${t.rating} between 1 and 5`),
+  ],
+);
+
+/** Amistad dirigida: requester → addressee. Un solo vínculo por par sin importar el sentido. */
+export const friendships = pgTable(
+  "friendships",
+  {
+    requesterId: uuid("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    addresseeId: uuid("addressee_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    status: friendshipStatus("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.requesterId, t.addresseeId] }),
+    uniqueIndex("friendships_pair_idx").on(sql`least(${t.requesterId}, ${t.addresseeId})`, sql`greatest(${t.requesterId}, ${t.addresseeId})`),
+    index("friendships_addressee_idx").on(t.addresseeId, t.status),
+    check("friendships_not_self_chk", sql`${t.requesterId} <> ${t.addresseeId}`),
+  ],
+);
+
+/** Hilos del foro. product_id null = foro general. */
+export const forumThreads = pgTable(
+  "forum_threads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    productId: uuid("product_id").references(() => products.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    locked: boolean("locked").notNull().default(false),
+    hidden: boolean("hidden").notNull().default(false),
+    postCount: integer("post_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastPostAt: timestamp("last_post_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("forum_threads_board_idx").on(t.productId, t.lastPostAt)],
+);
+
+export const forumPosts = pgTable(
+  "forum_posts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    threadId: uuid("thread_id").notNull().references(() => forumThreads.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    hidden: boolean("hidden").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`clock_timestamp()`),
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+  },
+  (t) => [index("forum_posts_thread_idx").on(t.threadId, t.createdAt)],
 );

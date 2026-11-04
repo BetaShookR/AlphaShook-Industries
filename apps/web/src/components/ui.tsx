@@ -24,6 +24,8 @@ export function Header() {
           <NavLink to="/catalog">Catálogo</NavLink>
           {user && <NavLink to="/library">Biblioteca</NavLink>}
           {user && <NavLink to="/wishlist">Deseados</NavLink>}
+          <NavLink to="/community">Comunidad</NavLink>
+          {user && <NavLink to="/friends">Amigos</NavLink>}
         </nav>
         <form className="search" onSubmit={submit} role="search">
           <input type="search" placeholder="Buscar juegos y aplicaciones" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar" />
