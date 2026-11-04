@@ -52,7 +52,7 @@ export function ProductActions({ slug, free }: { slug: string; free: boolean }) 
           {s.wishlisted ? "♥ En deseados (quitar)" : "♡ Agregar a deseados"}
         </button>
       )}
-      {s?.owned && <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>La descarga e instalación se hacen desde el launcher (próxima etapa).</p>}
+      {s?.owned && <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>Para descargarlo, instalarlo y jugar, abrí el launcher de AlphaShook (Windows y Linux) e iniciá sesión con esta cuenta.</p>}
       {msg && <div className={`alert ${msg.ok ? "ok" : "error"}`}>{msg.text}</div>}
     </div>
   );

@@ -112,3 +112,13 @@ describe("versiones con archivo", () => {
     expect((await app.inject({ method: "GET", url })).statusCode).toBe(401);
   });
 });
+
+describe("ajustes de R2 y validaciones extra", () => {
+  it("acepta el endpoint con el bucket al final y rechaza .apk en Windows", async () => {
+    const { R2Storage } = await import("../src/lib/storage.js");
+    const s = new R2Storage({ endpoint: "https://abc.r2.cloudflarestorage.com/alphashook-files/", bucket: "alphashook-files", accessKeyId: "a", secretAccessKey: "b" });
+    expect(await s.presignGet("k.zip", 60)).toMatch(/^https:\/\/abc\.r2\.cloudflarestorage\.com\/alphashook-files\/k\.zip\?/);
+    const r = await call("admin", "POST", `/v1/dev/products/${slug}/releases`, rel({ version: "9.9.9", launchPath: "Juego.apk" }));
+    expect(r.json().details[0].path).toBe("launchPath");
+  });
+});

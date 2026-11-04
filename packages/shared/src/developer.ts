@@ -107,6 +107,8 @@ export const releaseCreateSchema = z.object({
   launchPath: z.string().trim().min(1).max(260)
     .refine((p) => !p.startsWith("/") && !/^[a-z]:/i.test(p) && !p.split(/[\\/]/).includes(".."), "Ruta relativa dentro del .zip"),
   changelog: z.string().trim().max(2000).optional().default(""),
+}).refine((d) => d.platform !== "windows" || /\.(exe|bat|cmd)$/i.test(d.launchPath), {
+  path: ["launchPath"], message: "En Windows el juego tiene que abrirse con un .exe (los .apk son de Android)",
 });
 export type ReleaseCreateInput = z.input<typeof releaseCreateSchema>;
 

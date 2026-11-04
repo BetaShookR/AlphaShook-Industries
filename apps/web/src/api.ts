@@ -156,7 +156,7 @@ const MESSAGES: Record<string, string> = {
   version_exists: "Ya existe esa versión para esa plataforma.",
   file_missing: "El archivo no llegó al almacenamiento. Probá subirlo de nuevo.",
   size_mismatch: "El archivo subido está incompleto. Probá de nuevo.",
-  upload_failed: "Falló la subida del archivo. Revisá tu conexión y probá de nuevo.",
+  upload_failed: "Falló la subida del archivo a R2. Revisá tu conexión y la regla CORS del bucket, y probá de nuevo.",
   no_release: "Todavía no hay una versión descargable para esta plataforma.",
 };
 

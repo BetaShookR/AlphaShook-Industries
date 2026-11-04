@@ -25,7 +25,9 @@ export class R2Storage implements ObjectStorage {
   private base: string;
   constructor(cfg: R2Config) {
     this.client = new AwsClient({ accessKeyId: cfg.accessKeyId, secretAccessKey: cfg.secretAccessKey, service: "s3", region: "auto" });
-    this.base = `${cfg.endpoint.replace(/\/+$/, "")}/${cfg.bucket}`;
+    // Cloudflare muestra la URL "S3 API" con el bucket al final: se acepta con o sin él.
+    const endpoint = cfg.endpoint.trim().replace(/\/+$/, "").replace(new RegExp(`/${cfg.bucket}$`), "");
+    this.base = `${endpoint}/${cfg.bucket}`;
   }
   private url(key: string, params: Record<string, string> = {}) {
     const u = new URL(`${this.base}/${key.split("/").map(encodeURIComponent).join("/")}`);
