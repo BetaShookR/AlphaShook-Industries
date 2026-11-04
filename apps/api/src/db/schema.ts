@@ -188,6 +188,9 @@ export const productRequirements = pgTable(
 );
 
 /** Versiones publicadas. Los archivos binarios se agregan en la etapa del portal de desarrolladores. */
+/** uploading → (archivo subido) verifying → ready | failed. Las versiones antiguas sin archivo quedan 'ready' sin storage_key. */
+export const releaseStatus = pgEnum("release_status", ["uploading", "verifying", "ready", "failed"]);
+
 export const releases = pgTable(
   "releases",
   {
@@ -199,6 +202,13 @@ export const releases = pgTable(
     changelog: text("changelog"),
     // clock_timestamp(): distinto por fila aun dentro de una transacción (ordena versiones importadas juntas).
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull().default(sql`clock_timestamp()`),
+    status: releaseStatus("status").notNull().default("ready"),
+    /** Clave del archivo .zip en el almacenamiento (R2). null = versión sin archivo descargable. */
+    storageKey: text("storage_key"),
+    fileName: text("file_name"),
+    sha256: text("sha256"),
+    /** Ejecutable relativo a la carpeta de instalación (ej. "bin/Juego.exe"). */
+    launchPath: text("launch_path"),
   },
   (t) => [
     uniqueIndex("releases_product_platform_version_idx").on(t.productId, t.platform, t.version),

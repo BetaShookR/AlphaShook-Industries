@@ -1,6 +1,6 @@
 # PROJECT_STATUS — AlphaShook
 
-Última actualización: 2026-11-04
+Última actualización: 2026-11-04 (Etapa 6)
 
 | Etapa | Estado |
 |---|---|
@@ -9,9 +9,10 @@
 | 2. Cuentas (backend) | ✅ Terminada — verificada en Windows 10 + PG 17.11 (18/18 tests) |
 | 3. Catálogo y tienda web | ✅ Terminada — verificada en Windows (tienda funcionando con `iniciar.bat`) |
 | 4. Biblioteca, productos gratuitos y lista de deseos | ✅ Terminada — verificada en Windows (biblioteca y catálogo con juegos reales) |
-| 4b. Comunidad: foros, reseñas y valoraciones, perfiles públicos, amigos | ✅ Terminada — probada en Linux/PG16; falta verificar en Windows y publicar |
-| 5. Portal de desarrolladores (sin subida de archivos) | ✅ Terminada — probada en Linux/PG16; falta verificar en Windows y publicar |
-| 6–10 | ⏳ Pendientes (6: launcher + subida/descarga de archivos con R2; 9: panel admin completo) |
+| 4b. Comunidad: foros, reseñas y valoraciones, perfiles públicos, amigos | ✅ Terminada — publicada y verificada online |
+| 5. Portal de desarrolladores (sin subida de archivos) | ✅ Terminada — publicada y verificada online |
+| 6. Launcher de escritorio + subida/descarga con Cloudflare R2 | 🟡 Hecha y probada en Linux — falta crear R2, publicar y probar el instalador en Windows |
+| 7–10 | ⏳ Pendientes (7 Android, 8 pagos, 9 panel admin completo, 10 lanzamiento) |
 
 ## Etapa 1 — Terminado
 - Monorepo pnpm: `apps/api`, `packages/shared`, `packages/config`.
@@ -88,6 +89,23 @@
 - Linux/PG16: typecheck y build OK; 50/50 tests de API (6 nuevos: solicitud, permisos, aprobación, borrador, rechazo/aprobación, estadísticas, ocultar).
 - E2E en navegador: solicitar → aprobar → crear con requisitos/etiquetas → enviar → rechazar con motivo → corregir → publicar → visible en la tienda; 390/1000/1280 px sin scroll horizontal; sin errores JS.
 
+## Etapa 6 — Hecho (2026-11-04)
+- BD (`0009_releases_files`): `releases.status` (uploading/verifying/ready/failed), `storage_key`, `file_name`, `sha256`, `launch_path`. Tienda y biblioteca solo muestran versiones `ready`.
+- Almacenamiento: `apps/api/src/lib/storage.ts` (R2 vía aws4fetch; `MemoryStorage` para tests). Variables `R2_ENDPOINT`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`; sin ellas → 503 `storage_not_configured`.
+- API: `GET|POST /v1/dev/products/:slug/releases`, `POST …/releases/:id/complete` (verifica tamaño y calcula SHA-256 en segundo plano), `DELETE …/releases/:id`, `GET /v1/library/:slug/download?platform=windows|linux` (solo dueños; URL firmada 6 h, admite Range).
+- Portal web: sección "Versiones descargables" en `/dev/p/:slug` (subida .zip directa a R2 con barra de progreso, ejecutable, novedades, estado, borrar).
+- Launcher (`launcher/`, Electron 44 + React + Vite): login (misma cuenta), tienda con búsqueda, ficha y "agregar gratis", biblioteca, descargas (progreso, velocidad, tiempo restante, pausar/reanudar/cancelar/reintentar; continúa tras cerrar el launcher), verificación SHA-256, comprobación de espacio, instalación en carpeta propia (bloquea zip-slip y carpetas ajenas), aviso y aplicación de actualizaciones conservando partidas, desinstalar (conserva archivos creados por el juego), jugar, ajustes (carpeta y servidor).
+- Instaladores: Windows NSIS (`bat\crear-launcher.bat` o Panel → Launcher), Linux AppImage + .deb (`npm run dist:linux`).
+- Carpeta ordenada: scripts en `bat/`, `juegos.json` en `carga/`. Panel: pestaña Launcher y "Configurar R2" en Ajustes.
+
+## Probado (Etapa 6)
+- Linux/PG16: 55/55 tests de API (5 nuevos: sin R2, validaciones y permisos, subida+SHA-256, tamaño incorrecto, descarga solo dueños y última versión).
+- R2Storage contra servidor S3 local (s3rver): PUT firmado, HEAD, SHA-256, descarga parcial (206), borrar. Falta la prueba con la cuenta real de R2.
+- E2E portal (Chromium): subir .zip 3 MB con progreso → "Lista" → visible en la tienda; 390 px sin desborde del formulario; sin errores JS.
+- Launcher, núcleo (5 tests): pausa, reinicio del launcher y reanudación con Range, archivo dañado rechazado, actualización conservando partida, desinstalación parcial, carpeta ajena protegida.
+- Launcher E2E (Electron real, Xvfb): login incorrecto/correcto, tienda, búsqueda, agregar gratis, instalar, ejecutar el juego, nueva versión subida → "Actualizar" → actualizado conservando partida, desinstalar, ajustes; sin errores JS.
+- AppImage y .deb generados; el AppImage arranca. Instalador .exe: se genera en Windows (no probado todavía).
+
 ## Herramienta: Panel AlphaShook
 - `Panel AlphaShook.bat` abre `herramientas/panel.pyw` (Python + tkinter, sin dependencias): estado de la tienda online, iniciar/detener tienda local, cambiar rol, cargar juegos (local u online), subir a GitHub, correr tests, guardar URL de Neon (`.neon-url`, ignorado por git).
 - Probado en Linux (Xvfb): cambiar rol y cargar juegos contra Postgres real. Los .bat anteriores siguen funcionando.
@@ -100,6 +118,7 @@
 - Probado local en modo producción: health, tienda, rutas profundas, API, 404 JSON, migraciones automáticas. 34/34 tests.
 
 ## Pendiente
+- Etapa 6: crear cuenta R2 + CORS, cargar claves (Panel local y Render), publicar, crear el .exe y probarlo en Windows 10/11. Sin firma de código (Windows SmartScreen avisará). Sin actualización automática del propio launcher, notificaciones ni perfil dentro del launcher (pendiente). Archivos > 5 GB requieren subida multiparte (futuro).
 - Publicar: crear Neon + Brevo + repo privado + Blueprint en Render (pasos en `docs/DEPLOY.md`).
 - Etapa 5: verificar en Windows y publicar. Subida de versiones (archivos) en Etapa 6 con R2. Precio > 0 se puede cargar pero no se puede comprar hasta Etapa 8.
 - Comunidad: verificar en Windows (`iniciar.bat`) y publicar con `subir-a-github.bat` (Render migra solo).

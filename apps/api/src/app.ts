@@ -10,6 +10,8 @@ import { BrevoMailer, LogMailer, type Mailer } from "./lib/mailer.js";
 import { authRoutes, makeOptionalAuth, makeRequireAuth } from "./modules/auth/routes.js";
 import { communityRoutes } from "./modules/community/routes.js";
 import { developerRoutes } from "./modules/developer/routes.js";
+import { MemoryStorage, R2Storage, type ObjectStorage } from "./lib/storage.js";
+import { releaseRoutes } from "./modules/releases/routes.js";
 import { libraryRoutes } from "./modules/library/routes.js";
 import { catalogRoutes } from "./modules/catalog/routes.js";
 import { createAuthService } from "./modules/auth/service.js";
@@ -24,7 +26,15 @@ declare module "fastify" {
 
 export interface AppDeps {
   mailer?: Mailer;
+  /** null = sin almacenamiento. Por defecto se crea desde las variables R2_*. */
+  storage?: ObjectStorage | null;
 }
+
+function createStorage(env: Env): ObjectStorage | null {
+  if (!env.R2_ENDPOINT || !env.R2_BUCKET || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY) return null;
+  return new R2Storage({ endpoint: env.R2_ENDPOINT, bucket: env.R2_BUCKET, accessKeyId: env.R2_ACCESS_KEY_ID, secretAccessKey: env.R2_SECRET_ACCESS_KEY });
+}
+export { MemoryStorage };
 
 function createMailer(env: Env, app: { log: FastifyBaseLogger }): Mailer {
   if (env.MAIL_PROVIDER === "brevo") {
@@ -45,7 +55,7 @@ export function buildApp(env: Env, db: Database, deps: AppDeps = {}) {
 
   app.setErrorHandler((err: FastifyError & { code?: string; details?: unknown }, req, reply) => {
     const status = err.statusCode ?? 500;
-    if (status >= 500) {
+    if (status >= 500 && status !== 503) {
       req.log.error({ err }, "error no controlado");
       return reply.code(500).send({ error: "internal_error" });
     }
@@ -79,6 +89,10 @@ export function buildApp(env: Env, db: Database, deps: AppDeps = {}) {
     writeLimitMax: env.COMMUNITY_WRITE_LIMIT_MAX,
   });
   app.register(developerRoutes, { prefix: "/v1", db, requireAuth: makeRequireAuth(auth), writeLimitMax: env.COMMUNITY_WRITE_LIMIT_MAX });
+
+  const storage = deps.storage !== undefined ? deps.storage : createStorage(env);
+  if (!storage) app.log.warn("R2 no configurado: subida y descarga de archivos deshabilitadas");
+  app.register(releaseRoutes, { prefix: "/v1", db, storage, requireAuth: makeRequireAuth(auth), writeLimitMax: env.COMMUNITY_WRITE_LIMIT_MAX });
 
   // Producción: la misma API sirve la tienda web (mismo origen → cookie de sesión sin CORS).
   const webDir = env.WEB_DIST_DIR ? resolve(env.WEB_DIST_DIR) : null;

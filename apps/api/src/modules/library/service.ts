@@ -50,7 +50,7 @@ export function createLibraryService(db: Database) {
         // Última versión por producto y plataforma.
         db.selectDistinctOn([releases.productId, releases.platform], {
           productId: releases.productId, version: releases.version, platform: releases.platform, sizeBytes: releases.sizeBytes,
-        }).from(releases).where(inArray(releases.productId, ids))
+        }).from(releases).where(and(inArray(releases.productId, ids), eq(releases.status, "ready")))
           .orderBy(releases.productId, releases.platform, desc(releases.publishedAt)),
       ]);
 

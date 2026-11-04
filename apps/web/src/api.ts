@@ -1,5 +1,7 @@
 import type {
   DeveloperApplication,
+  DevRelease,
+  ReleaseCreateInput,
   DevOrg,
   DevPortalStatus,
   DevProductCreate,
@@ -101,6 +103,11 @@ export const api = {
   devCreate: (d: DevProductCreate) => post<{ slug: string }>("/dev/products", d),
   devUpdate: (slug: string, d: DevProductInput) => request<void>(`/dev/products/${encodeURIComponent(slug)}`, { method: "PUT", body: JSON.stringify(d) }),
   devAction: (slug: string, action: "submit" | "withdraw" | "hide" | "show") => post<void>(`/dev/products/${encodeURIComponent(slug)}/${action}`),
+  devReleases: (slug: string) => request<DevRelease[]>(`/dev/products/${encodeURIComponent(slug)}/releases`),
+  devReleaseCreate: (slug: string, d: ReleaseCreateInput) =>
+    post<{ id: string; uploadUrl: string; contentType: string }>(`/dev/products/${encodeURIComponent(slug)}/releases`, d),
+  devReleaseComplete: (slug: string, id: string) => post<void>(`/dev/products/${encodeURIComponent(slug)}/releases/${id}/complete`),
+  devReleaseDelete: (slug: string, id: string) => request<void>(`/dev/products/${encodeURIComponent(slug)}/releases/${id}`, { method: "DELETE" }),
   adminApplications: (status = "pending") => request<DeveloperApplication[]>(`/admin/applications?status=${status}`),
   adminDecideApplication: (id: string, approve: boolean, note: string) =>
     post<unknown>(`/admin/applications/${id}/${approve ? "approve" : "reject"}`, { note }),
@@ -144,6 +151,13 @@ const MESSAGES: Record<string, string> = {
   invalid_category: "Alguna categoría no existe.",
   in_review_locked: "Está en revisión: retiralo de la revisión para editarlo.",
   invalid_status: "No se puede hacer eso en el estado actual del producto.",
+  storage_not_configured: "La subida de archivos todavía no está configurada en el servidor (falta Cloudflare R2).",
+  platform_not_in_product: "Esa plataforma no está marcada en el producto. Agregala y guardá primero.",
+  version_exists: "Ya existe esa versión para esa plataforma.",
+  file_missing: "El archivo no llegó al almacenamiento. Probá subirlo de nuevo.",
+  size_mismatch: "El archivo subido está incompleto. Probá de nuevo.",
+  upload_failed: "Falló la subida del archivo. Revisá tu conexión y probá de nuevo.",
+  no_release: "Todavía no hay una versión descargable para esta plataforma.",
 };
 
 export const errorMessage = (e: unknown) =>

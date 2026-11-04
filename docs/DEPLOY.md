@@ -13,7 +13,7 @@ Arquitectura: **1 servicio web en Render** (API + tienda) + **PostgreSQL en Neon
 
 ## 3. Código en GitHub
 1. Crear un repo **privado** vacío en GitHub (sin README).
-2. Doble clic en `subir-a-github.bat` y pegar la URL del repo.
+2. Doble clic en `bat\subir-a-github.bat` y pegar la URL del repo.
 
 ## 4. Render
 1. https://dashboard.render.com → *New* → *Blueprint* → elegir el repo. Render lee `render.yaml`.
@@ -27,7 +27,7 @@ Arquitectura: **1 servicio web en Render** (API + tienda) + **PostgreSQL en Neon
 En tu PC, con la `DATABASE_URL` de Neon:
 ```cmd
 set DATABASE_URL=postgresql://...neon...
-pnpm catalog:import juegos.json
+pnpm catalog:import carga\juegos.json
 set DATABASE_URL=
 ```
 

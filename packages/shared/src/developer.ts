@@ -92,3 +92,47 @@ export interface DevProductDetail extends Omit<DevProductInput, "media"> {
   media: string[];
   platforms: Platform[];
 }
+
+// ───────────── Versiones con archivo (Etapa 6) ─────────────
+/** Máximo por archivo: 5 GB (límite de una subida PUT simple en R2). */
+export const MAX_RELEASE_BYTES = 5 * 1024 ** 3;
+export const desktopPlatformSchema = z.enum(["windows", "linux"]);
+export type DesktopPlatform = z.infer<typeof desktopPlatformSchema>;
+
+export const releaseCreateSchema = z.object({
+  version: z.string().trim().regex(/^[0-9A-Za-z][0-9A-Za-z.+_-]{0,31}$/, "Versión inválida (ej. 1.0.2)"),
+  platform: desktopPlatformSchema,
+  fileName: z.string().trim().regex(/^[\w .()-]{1,120}\.zip$/i, "Debe ser un archivo .zip"),
+  sizeBytes: z.number().int().positive().max(MAX_RELEASE_BYTES, "Máximo 5 GB"),
+  launchPath: z.string().trim().min(1).max(260)
+    .refine((p) => !p.startsWith("/") && !/^[a-z]:/i.test(p) && !p.split(/[\\/]/).includes(".."), "Ruta relativa dentro del .zip"),
+  changelog: z.string().trim().max(2000).optional().default(""),
+});
+export type ReleaseCreateInput = z.input<typeof releaseCreateSchema>;
+
+export interface DevRelease {
+  id: string;
+  version: string;
+  platform: "windows" | "linux" | "android";
+  status: "uploading" | "verifying" | "ready" | "failed";
+  sizeBytes: number;
+  fileName: string | null;
+  sha256: string | null;
+  launchPath: string | null;
+  changelog: string | null;
+  publishedAt: string;
+}
+
+/** Respuesta de descarga para el launcher. La URL vence; pedir otra al reanudar. */
+export interface DownloadTicket {
+  slug: string;
+  name: string;
+  version: string;
+  platform: DesktopPlatform;
+  sizeBytes: number;
+  sha256: string;
+  fileName: string;
+  launchPath: string;
+  url: string;
+  expiresAt: string;
+}

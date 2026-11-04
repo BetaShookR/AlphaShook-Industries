@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
-import type { DevProductDetail, DevProductInput, DevProductRow, Platform, ProductStatus } from "@alphashook/shared";
-import { api, errorMessage, formatPrice, PLATFORM_LABEL } from "../api";
+import type { DesktopPlatform, DevProductDetail, DevRelease, DevProductInput, DevProductRow, Platform, ProductStatus } from "@alphashook/shared";
+import { api, ApiError, errorMessage, formatBytes, formatPrice, PLATFORM_LABEL } from "../api";
 import { useAsync, useSession } from "../hooks";
 import { ErrorBox, fieldErrors } from "../components/ui";
 
@@ -380,7 +380,137 @@ function DevProductInner() {
           {status === "hidden" && <button type="button" className="btn" disabled={f.busy} onClick={() => void action("show")}>Volver a publicar</button>}
         </div>
       </form>
+      {!isNew && <Releases slug={slug!} platforms={detail.data!.platforms} />}
     </div>
+  );
+}
+
+// ───────────── Versiones descargables (archivos .zip en R2) ─────────────
+const REL_STATUS: Record<DevRelease["status"], { label: string; cls: string }> = {
+  uploading: { label: "Subida incompleta", cls: "warn" },
+  verifying: { label: "Verificando…", cls: "warn" },
+  ready: { label: "Lista", cls: "" },
+  failed: { label: "Falló", cls: "warn" },
+};
+
+/** PUT directo a R2 con progreso (fetch no informa progreso de subida). */
+function uploadFile(url: string, file: File, contentType: string, onProgress: (pct: number) => void) {
+  return new Promise<void>((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open("PUT", url);
+    x.setRequestHeader("content-type", contentType);
+    x.upload.onprogress = (e) => e.lengthComputable && onProgress(Math.floor((e.loaded / e.total) * 100));
+    x.onload = () => (x.status >= 200 && x.status < 300 ? resolve() : reject(new ApiError(x.status, "upload_failed")));
+    x.onerror = () => reject(new ApiError(0, "upload_failed"));
+    x.send(file);
+  });
+}
+
+function Releases({ slug, platforms }: { slug: string; platforms: string[] }) {
+  const desktop = platforms.filter((p): p is DesktopPlatform => p === "windows" || p === "linux");
+  const [tick, setTick] = useState(0);
+  const list = useAsync(() => api.devReleases(slug), [slug, tick]);
+  const [form, setForm] = useState({ version: "", platform: desktop[0] ?? "windows", launchPath: "", changelog: "" });
+  const [file, setFile] = useState<File | null>(null);
+  const [pct, setPct] = useState<number | null>(null);
+  const [msg, setMsg] = useState<string>();
+  const f = useRun();
+
+  // Mientras haya versiones verificándose, refrescar cada 3 s.
+  const verifying = list.data?.some((r) => r.status === "verifying");
+  useEffect(() => {
+    if (!verifying) return;
+    const t = setTimeout(() => setTick((n) => n + 1), 3000);
+    return () => clearTimeout(t);
+  }, [verifying, list.data]);
+
+  const upload = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!file) return;
+    setMsg(undefined);
+    const ok = await f.run(async () => {
+      const r = await api.devReleaseCreate(slug, { ...form, fileName: file.name, sizeBytes: file.size });
+      setPct(0);
+      await uploadFile(r.uploadUrl, file, r.contentType, setPct);
+      await api.devReleaseComplete(slug, r.id);
+    });
+    setPct(null);
+    if (ok) {
+      setMsg("Archivo subido. Se está verificando; en unos segundos queda lista para descargar desde el launcher.");
+      setForm({ ...form, version: "", changelog: "" });
+      setFile(null);
+    }
+    setTick((n) => n + 1);
+  };
+  const remove = async (r: DevRelease) => {
+    if (!window.confirm(`¿Borrar la versión ${r.version} (${PLATFORM_LABEL[r.platform]})? Se elimina el archivo.`)) return;
+    if (await f.run(() => api.devReleaseDelete(slug, r.id))) setTick((n) => n + 1);
+  };
+
+  return (
+    <section className="section" style={{ marginTop: 28 }}>
+      <h2>Versiones descargables</h2>
+      <p className="muted">Subí tu juego como un archivo <b>.zip</b> (hasta 5 GB). El launcher lo descarga, verifica y descomprime. Indicá qué archivo se ejecuta para abrir el juego.</p>
+      {msg && <div className="alert ok">{msg}</div>}
+      {f.error !== undefined && <ErrorBox error={f.error} />}
+      {!desktop.length ? (
+        <div className="alert info">Marcá Windows o Linux en Plataformas y guardá para poder subir versiones.</div>
+      ) : (
+        <form className="card form" style={{ padding: 20 }} onSubmit={(e) => void upload(e)}>
+          <fieldset disabled={f.busy} style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: 14, minWidth: 0 }}>
+            <div className="grid-2">
+              <div className="field">
+                <label htmlFor="rf-version">Versión</label>
+                <input id="rf-version" required placeholder="1.0.0" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} />
+                <Err m={f.fe.version} />
+              </div>
+              <div className="field">
+                <label htmlFor="rf-platform">Plataforma</label>
+                <select id="rf-platform" value={form.platform} onChange={(e) => setForm({ ...form, platform: e.target.value as DesktopPlatform })}>
+                  {desktop.map((p) => <option key={p} value={p}>{PLATFORM_LABEL[p]}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="rf-file">Archivo .zip</label>
+              <input id="rf-file" type="file" style={{ maxWidth: "100%" }} accept=".zip,application/zip" required onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              {file && <span className="muted">{file.name} · {formatBytes(file.size)}</span>}
+              <Err m={f.fe.fileName ?? f.fe.sizeBytes} />
+            </div>
+            <div className="field">
+              <label htmlFor="rf-launch">Archivo que abre el juego (dentro del .zip)</label>
+              <input id="rf-launch" required placeholder={form.platform === "windows" ? "MiJuego.exe  o  bin/MiJuego.exe" : "MiJuego.x86_64"}
+                value={form.launchPath} onChange={(e) => setForm({ ...form, launchPath: e.target.value })} />
+              <Err m={f.fe.launchPath} />
+            </div>
+            <div className="field">
+              <label htmlFor="rf-changelog">Novedades (opcional)</label>
+              <textarea id="rf-changelog" rows={3} maxLength={2000} value={form.changelog} onChange={(e) => setForm({ ...form, changelog: e.target.value })} />
+            </div>
+            {pct !== null && (
+              <div aria-label="Progreso de subida">
+                <progress max={100} value={pct} style={{ width: "100%" }} /> <span className="muted">{pct}%</span>
+              </div>
+            )}
+            <div className="row-actions"><button className="btn primary">{f.busy ? "Subiendo… no cierres la página" : "Subir versión"}</button></div>
+          </fieldset>
+        </form>
+      )}
+      <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
+        {list.data?.map((r) => (
+          <div key={r.id} className="card list-row">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <b>{r.version}</b> · {PLATFORM_LABEL[r.platform]} <span className={`badge ${REL_STATUS[r.status].cls}`}>{REL_STATUS[r.status].label}</span>
+              <div className="muted" style={{ overflowWrap: "anywhere" }}>
+                {r.fileName ?? "Sin archivo"} · {formatBytes(r.sizeBytes)}{r.launchPath && <> · abre: {r.launchPath}</>} · {date(r.publishedAt)}
+              </div>
+            </div>
+            <button className="btn small danger" disabled={f.busy} onClick={() => void remove(r)}>Borrar</button>
+          </div>
+        ))}
+        {list.data?.length === 0 && <p className="muted">Todavía no subiste versiones.</p>}
+      </div>
+    </section>
   );
 }
 

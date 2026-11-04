@@ -16,6 +16,10 @@ import tkinter as tk
 
 ROOT = Path(__file__).resolve().parent.parent  # carpeta del proyecto
 NEON_FILE = ROOT / ".neon-url"
+API_ENV = ROOT / "apps" / "api" / ".env"
+LAUNCHER = ROOT / "launcher"
+R2_KEYS = [("R2_ENDPOINT", "Endpoint (https://....r2.cloudflarestorage.com)"), ("R2_BUCKET", "Nombre del bucket"),
+           ("R2_ACCESS_KEY_ID", "Access Key ID"), ("R2_SECRET_ACCESS_KEY", "Secret Access Key")]
 ONLINE_URL = "https://alphashook.onrender.com"
 LOCAL_URL = "http://localhost:5173"
 WIN = os.name == "nt"
@@ -23,6 +27,31 @@ NO_WINDOW = 0x08000000 if WIN else 0  # CREATE_NO_WINDOW
 
 BG, SURF, LINE, TXT, MUTED, ACC, OK, BAD = "#0b0d12", "#181c26", "#2a3041", "#e9ecf3", "#9aa3b8", "#ff6b2c", "#3ccf8e", "#ff5470"
 ROLES = {"Moderador": "moderator", "Administrador": "admin", "Desarrollador": "developer", "Usuario normal": "user"}
+
+
+def read_env(path: Path) -> dict:
+    out = {}
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                k, v = line.split("=", 1)
+                out[k.strip()] = v.strip()
+    except OSError:
+        pass
+    return out
+
+
+def write_env_keys(path: Path, values: dict) -> None:
+    """Reemplaza o agrega claves en un .env sin tocar las demás líneas."""
+    lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+    done = set()
+    for i, line in enumerate(lines):
+        k = line.split("=", 1)[0].strip()
+        if k in values:
+            lines[i] = f"{k}={values[k]}"
+            done.add(k)
+    lines += [f"{k}={v}" for k, v in values.items() if k not in done]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def read_neon() -> str:
@@ -99,7 +128,7 @@ class Panel(tk.Tk):
 
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=False, padx=16)
-        tabs = {name: ttk.Frame(nb, padding=(0, 12, 0, 0)) for name in ("Tienda", "Usuarios", "Juegos", "Publicar", "Ajustes")}
+        tabs = {name: ttk.Frame(nb, padding=(0, 12, 0, 0)) for name in ("Tienda", "Usuarios", "Juegos", "Launcher", "Publicar", "Ajustes")}
         for name, fr in tabs.items():
             nb.add(fr, text=name)
 
@@ -134,10 +163,21 @@ class Panel(tk.Tk):
                        "Usa el formato de docs/catalog-template.json. Si el juego ya existe (mismo slug), se actualiza.")
         self.games_where = self._where(c)
         row = ttk.Frame(c, style="Card.TFrame"); row.pack(fill="x")
-        self.games_file = tk.StringVar(value=str(ROOT / "juegos.json"))
+        self.games_file = tk.StringVar(value=str(ROOT / "carga" / "juegos.json"))
         ttk.Entry(row, textvariable=self.games_file).pack(side="left", fill="x", expand=True)
         ttk.Button(row, text="Elegir…", command=self.pick_games).pack(side="left", padx=8)
         ttk.Button(row, text="Cargar", style="Accent.TButton", command=self.load_games).pack(side="left")
+
+        # Launcher
+        c = self._card(tabs["Launcher"], "Probar el launcher en mi PC",
+                       "Abre el launcher de escritorio. La primera vez descarga sus herramientas (2-5 minutos).")
+        row = ttk.Frame(c, style="Card.TFrame"); row.pack(anchor="w")
+        ttk.Button(row, text="Abrir launcher", style="Accent.TButton", command=self.open_launcher).pack(side="left", padx=(0, 8))
+        c = self._card(tabs["Launcher"], "Crear el instalador para Windows",
+                       "Genera 'AlphaShook-Launcher-Setup.exe' en la carpeta launcher\\release. Ese archivo es el que comparten los jugadores.")
+        row = ttk.Frame(c, style="Card.TFrame"); row.pack(anchor="w")
+        ttk.Button(row, text="Crear instalador", style="Accent.TButton", command=self.build_launcher).pack(side="left", padx=(0, 8))
+        ttk.Button(row, text="Abrir carpeta del instalador", command=self.open_release).pack(side="left")
 
         # Publicar
         c = self._card(tabs["Publicar"], "Subir cambios a GitHub (Render actualiza la tienda online solo)",
@@ -156,6 +196,12 @@ class Panel(tk.Tk):
         self.neon_lbl = ttk.Label(row, style="Card.TLabel"); self.neon_lbl.pack(side="left", padx=(0, 12))
         ttk.Button(row, text="Cambiar URL", command=self.ask_neon).pack(side="left")
         self._refresh_neon()
+        c = self._card(tabs["Ajustes"], "Cloudflare R2 (subida y descarga de juegos)",
+                       "Guarda las claves solo en esta PC (apps\\api\\.env, no se sube a GitHub). Para la tienda online se cargan en Render.")
+        row = ttk.Frame(c, style="Card.TFrame"); row.pack(anchor="w")
+        self.r2_lbl = ttk.Label(row, style="Card.TLabel"); self.r2_lbl.pack(side="left", padx=(0, 12))
+        ttk.Button(row, text="Configurar R2", command=self.ask_r2).pack(side="left")
+        self._refresh_r2()
         c = self._card(tabs["Ajustes"], "Pruebas automáticas", "Corre los tests de la API contra tu PostgreSQL local.")
         ttk.Button(c, text="Correr tests", command=lambda: self.run([["pnpm", "--filter", "@alphashook/api", "test"]])).pack(anchor="w")
 
@@ -193,7 +239,7 @@ class Panel(tk.Tk):
             env["DATABASE_URL"] = url
         return env
 
-    def run(self, cmds: list[list[str]], where: str = "local", done=None) -> None:
+    def run(self, cmds: list[list[str]], where: str = "local", done=None, cwd: Path = ROOT) -> None:
         """Ejecuta comandos en orden, en segundo plano, mostrando la salida en el registro."""
         if self.busy:
             messagebox.showinfo("Panel AlphaShook", "Esperá a que termine la tarea actual.")
@@ -208,7 +254,7 @@ class Panel(tk.Tk):
             for cmd in cmds:
                 self.write("> " + " ".join(cmd), "info")
                 try:
-                    p = subprocess.Popen(cmd, cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    p = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                          shell=WIN, creationflags=NO_WINDOW, text=True, encoding="utf-8", errors="replace")
                     for line in p.stdout:  # type: ignore[union-attr]
                         self.write(line.rstrip("\n"), "ok" if "✓" in line else "bad" if "✗" in line else "")
@@ -296,6 +342,58 @@ class Panel(tk.Tk):
         if not staged:
             self.write("No había cambios nuevos; se intenta subir lo pendiente.", "info")
         self.run(cmds, "local", lambda ok: ok and self.write("✓ Subido. La tienda online se actualiza en 3-4 minutos.", "ok"))
+
+    def open_launcher(self) -> None:
+        def go(ok: bool) -> None:
+            if ok:
+                subprocess.Popen(["npx", "electron", "."], cwd=LAUNCHER, shell=WIN, creationflags=NO_WINDOW,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                self.write("✓ Abriendo el launcher…", "ok")
+        self.run([["npm", "install", "--no-audit", "--no-fund"], ["npm", "run", "build"]], "local", go, cwd=LAUNCHER)
+
+    def build_launcher(self) -> None:
+        self.run([["npm", "install", "--no-audit", "--no-fund"], ["npm", "run", "dist:win"]], "local",
+                 lambda ok: ok and (self.write("✓ Instalador creado en launcher\\release.", "ok"), self.open_release()), cwd=LAUNCHER)
+
+    def open_release(self) -> None:
+        d = LAUNCHER / "release"
+        if not d.is_dir():
+            messagebox.showinfo("Panel AlphaShook", "Todavía no se creó el instalador.")
+        elif WIN:
+            os.startfile(d)  # type: ignore[attr-defined]
+        else:
+            webbrowser.open(d.as_uri())
+
+    def _refresh_r2(self) -> None:
+        env = read_env(API_ENV)
+        ok = all(env.get(k) for k, _ in R2_KEYS)
+        self.r2_lbl.config(text=f"Configurado: bucket {env['R2_BUCKET']}" if ok else "Sin configurar")
+
+    def ask_r2(self) -> None:
+        cur = read_env(API_ENV)
+        win = tk.Toplevel(self, bg=SURF, padx=16, pady=16)
+        win.title("Cloudflare R2"); win.transient(self); win.grab_set()
+        tk.Label(win, text="Pegá los datos de tu token de R2 (clic derecho → pegar o Ctrl+V)", bg=SURF, fg=TXT).pack(anchor="w")
+        entries = {}
+        for k, label in R2_KEYS:
+            tk.Label(win, text=label, bg=SURF, fg=MUTED).pack(anchor="w", pady=(10, 2))
+            e = ttk.Entry(win, width=70, show="•" if "SECRET" in k else "")
+            e.insert(0, cur.get(k, "alphashook-files" if k == "R2_BUCKET" else ""))
+            e.pack(anchor="w"); entries[k] = e
+
+        def save() -> None:
+            vals = {k: e.get().strip() for k, e in entries.items()}
+            if not vals["R2_ENDPOINT"].startswith("https://") or not all(vals.values()):
+                messagebox.showwarning("Panel AlphaShook", "Completá los 4 datos. El endpoint empieza con https://", parent=win)
+                return
+            vals["R2_ENDPOINT"] = vals["R2_ENDPOINT"].rstrip("/")
+            write_env_keys(API_ENV, vals)
+            win.destroy()
+            self.write("✓ R2 guardado en apps\\api\\.env. Reiniciá la tienda local para usarlo.", "ok")
+
+        ttk.Button(win, text="Guardar", style="Accent.TButton", command=save).pack(anchor="e", pady=(14, 0))
+        self.wait_window(win)
+        self._refresh_r2()
 
     def _refresh_neon(self) -> None:
         url = read_neon()

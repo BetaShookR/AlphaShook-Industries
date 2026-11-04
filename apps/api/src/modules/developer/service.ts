@@ -109,6 +109,8 @@ export function createDeveloperService(db: Database) {
   const toApp = (r: AppRow): DeveloperApplication => ({ ...r, createdAt: r.createdAt.toISOString(), reviewedAt: iso(r.reviewedAt) });
 
   return {
+    /** Verifica que el actor administre el producto (usado por el módulo de versiones). */
+    owned: ownedProduct,
     // ───── Solicitudes ─────
     async portalStatus(a: Actor): Promise<DevPortalStatus> {
       const [orgs, [app]] = await Promise.all([

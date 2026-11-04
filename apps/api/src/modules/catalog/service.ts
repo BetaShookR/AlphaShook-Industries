@@ -105,7 +105,7 @@ export function createCatalogService(db: Database) {
         db.select({
           version: releases.version, platform: releases.platform, sizeBytes: releases.sizeBytes,
           changelog: releases.changelog, publishedAt: releases.publishedAt,
-        }).from(releases).where(eq(releases.productId, p.id)).orderBy(desc(releases.publishedAt)),
+        }).from(releases).where(and(eq(releases.productId, p.id), eq(releases.status, "ready"))).orderBy(desc(releases.publishedAt)),
       ]);
 
       const releaseList = rels.map((r) => ({ ...r, publishedAt: r.publishedAt.toISOString() }));

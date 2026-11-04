@@ -3,3 +3,5 @@ dist/
 .env
 *.log
 .neon-url
+dist-electron/
+launcher/release/

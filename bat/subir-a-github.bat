@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-cd /d "%~dp0"
+cd /d "%~dp0.."
 git remote get-url origin >nul 2>&1 && goto :push
 set /p URL=Pega la URL del repo privado de GitHub (https://github.com/...): 
 git remote add origin "%URL%" || goto :error

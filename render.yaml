@@ -30,3 +30,11 @@ services:
         sync: false
       - key: MAIL_FROM_NAME
         value: AlphaShook
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET
+        value: alphashook-files
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false

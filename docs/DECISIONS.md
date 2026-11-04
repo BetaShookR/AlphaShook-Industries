@@ -33,3 +33,9 @@
 | 29 | 2026-11-04 | Portal sin subida de archivos; versiones/binarios con R2 en Etapa 6 (launcher) | Decisión del usuario; subida y descarga se prueban juntas |
 | 30 | 2026-11-04 | Revisión y aprobación solo rol admin; editar un producto publicado no requiere nueva revisión | Simple al inicio; se puede endurecer cuando haya desarrolladores externos |
 | 31 | 2026-11-04 | El portal escribe productos a través del importador del catálogo | Una sola lógica de escritura y validación |
+| 32 | 2026-11-04 | Archivos en R2 con URLs firmadas (aws4fetch); el navegador sube directo a R2 (PUT, máx. 5 GB) | El servidor gratuito no transporta los archivos; dependencia mínima (sin AWS SDK) |
+| 33 | 2026-11-04 | Formato de versión: un .zip + ejecutable relativo; SHA-256 calculado por el servidor tras la subida | Integridad verificable por el launcher sin confiar en el navegador |
+| 34 | 2026-11-04 | Launcher en `launcher/` fuera del workspace pnpm (npm propio) | Render no descarga Electron en cada despliegue |
+| 35 | 2026-11-04 | Todas las llamadas del launcher pasan por el proceso principal (Bearer cifrado con safeStorage) | Sin CORS, token fuera de la interfaz, ventana con sandbox |
+| 36 | 2026-11-04 | Actualizar conserva archivos creados por el juego; desinstalar borra solo los del manifiesto | Protege partidas y no toca archivos ajenos |
+| 37 | 2026-11-04 | Carpeta ordenada: `bat/` (scripts), `carga/` (juegos.json); el Panel queda en la raíz | Pedido del usuario: saber qué abrir y dónde |
