@@ -27,6 +27,13 @@ contextBridge.exposeInMainWorld("alpha", {
     ipcRenderer.on("games:changed", h);
     return () => ipcRenderer.removeListener("games:changed", h);
   },
+  updateReady: () => call<string | null>("app:updateReady"),
+  restartToUpdate: () => call("app:restartToUpdate"),
+  onUpdate: (fn: (version: string) => void) => {
+    const h = (_e: unknown, v: string) => fn(v);
+    ipcRenderer.on("app:update", h);
+    return () => ipcRenderer.removeListener("app:update", h);
+  },
   onAuthExpired: (fn: () => void) => {
     const h = () => fn();
     ipcRenderer.on("auth:expired", h);

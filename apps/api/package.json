@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
     "catalog:import": "tsx --env-file=.env src/scripts/import-catalog.ts",
-    "user:role": "tsx --env-file=.env src/scripts/set-role.ts"
+    "user:role": "tsx --env-file=.env src/scripts/set-role.ts",
+    "launcher:publish": "tsx --env-file=.env src/scripts/publish-launcher.ts"
   },
   "dependencies": {
     "@alphashook/shared": "workspace:*",

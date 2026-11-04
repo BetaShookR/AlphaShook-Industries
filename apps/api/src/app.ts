@@ -94,6 +94,13 @@ export function buildApp(env: Env, db: Database, deps: AppDeps = {}) {
   if (!storage) app.log.warn("R2 no configurado: subida y descarga de archivos deshabilitadas");
   app.register(releaseRoutes, { prefix: "/v1", db, storage, requireAuth: makeRequireAuth(auth), writeLimitMax: env.COMMUNITY_WRITE_LIMIT_MAX });
 
+  // Actualizaciones del launcher: archivos públicos en R2 bajo launcher/ (latest.yml, instalador, blockmap).
+  app.get<{ Params: { file: string } }>("/v1/launcher/:file", async (req, reply) => {
+    if (!storage) return reply.code(503).send({ error: "storage_not_configured" });
+    if (!/^[\w.-]{1,120}\.(yml|exe|blockmap|AppImage|deb)$/.test(req.params.file)) return reply.code(404).send({ error: "not_found" });
+    return reply.header("cache-control", "no-store").redirect(await storage.presignGet(`launcher/${req.params.file}`, 3600), 302);
+  });
+
   // Producción: la misma API sirve la tienda web (mismo origen → cookie de sesión sin CORS).
   const webDir = env.WEB_DIST_DIR ? resolve(env.WEB_DIST_DIR) : null;
   if (webDir && existsSync(resolve(webDir, "index.html"))) {

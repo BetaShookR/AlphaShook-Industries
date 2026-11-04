@@ -4,8 +4,9 @@ import { readFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { autoUpdater } from "electron-updater";
 import { DownloadManager, type Job, type Ticket } from "./downloads.js";
-import { freeBytes, installZip, resolveLaunch, uninstall, zipUncompressedSize, type Manifest } from "./installer.js";
+import { findLaunchPath, freeBytes, installZip, resolveLaunch, uninstall, zipUncompressedSize, type Manifest } from "./installer.js";
 
 const DEFAULT_API = process.env.ALPHASHOOK_API_URL ?? "https://alphashook.onrender.com";
 const PLATFORM: "windows" | "linux" = process.platform === "win32" ? "windows" : "linux";
@@ -46,18 +47,27 @@ async function saveSettings() {
 
 // ── Sesión: token Bearer guardado cifrado con el sistema operativo cuando es posible ──
 let token: string | null = null;
+/** Último usuario conocido: permite entrar sin conexión o con el servidor dormido. */
+let cachedUser: unknown = null;
 function loadToken() {
   try {
     const raw = readFileSync(data("session.bin"));
-    token = safeStorage.isEncryptionAvailable() && raw[0] !== 0x7b ? safeStorage.decryptString(raw) : JSON.parse(raw.toString()).t;
+    const text = safeStorage.isEncryptionAvailable() && raw[0] !== 0x7b ? safeStorage.decryptString(raw) : raw.toString();
+    if (text.startsWith("{")) {
+      const j = JSON.parse(text) as { t: string; u?: unknown };
+      token = j.t;
+      cachedUser = j.u ?? null;
+    } else token = text; // formato anterior: solo el token
   } catch {
     token = null;
   }
 }
-async function saveToken(t: string | null) {
+async function saveToken(t: string | null, user: unknown = cachedUser) {
   token = t;
+  cachedUser = t ? user : null;
   if (!t) return fs.rm(data("session.bin"), { force: true });
-  const buf = safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(t) : Buffer.from(JSON.stringify({ t }));
+  const text = JSON.stringify({ t, u: cachedUser });
+  const buf = safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(text) : Buffer.from(text);
   await fs.writeFile(data("session.bin"), buf);
 }
 
@@ -66,16 +76,25 @@ class ApiError extends Error {
     super(code);
   }
 }
-async function api<T>(method: string, p: string, body?: unknown): Promise<T> {
+/** Registro de diagnóstico en la carpeta de datos del launcher (launcher.log). */
+function logLine(msg: string) {
+  void fs.appendFile(data("launcher.log"), `${new Date().toISOString()} ${msg}\n`).catch(() => undefined);
+}
+
+async function api<T>(method: string, p: string, body?: unknown, timeoutMs = 75_000): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${settings.apiUrl.replace(/\/+$/, "")}/v1${p}`, {
       method,
       headers: { ...(token && { authorization: `Bearer ${token}` }), ...(body !== undefined && { "content-type": "application/json" }) },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs), // el servidor gratuito tarda hasta ~1 min en despertar
     });
-  } catch {
-    throw new ApiError(0, "network_error");
+  } catch (e) {
+    const cause = (e as { cause?: { code?: string; message?: string } }).cause;
+    const detail = cause?.code ?? cause?.message ?? (e as Error).name ?? String(e);
+    logLine(`${method} ${settings.apiUrl}${p} → ${detail}`);
+    throw new ApiError(0, `network_error:${detail}`);
   }
   if (res.status === 401 && token) {
     await saveToken(null);
@@ -99,8 +118,9 @@ async function installJob(job: Job, zipPath: string, onPct: (n: number) => void)
   const prev = settings.installs[job.slug];
   if ((await freeBytes(path.dirname(dir))) < need + 50 * 1024 ** 2) throw new Error("No hay espacio suficiente en el disco para instalar.");
   const manifest = await installZip({ zipPath, installDir: dir, ...(prev && { previous: prev.manifest }), onProgress: (d, t) => onPct(Math.round((d / t) * 100)) });
-  if (!resolveLaunch(dir, job.launchPath)) throw new Error("El ejecutable indicado por el desarrollador no es válido.");
-  settings.installs[job.slug] = { slug: job.slug, name: job.name, version: job.version, platform: job.platform, dir, launchPath: job.launchPath, manifest, installedAt: new Date().toISOString() };
+  const launchPath = findLaunchPath(manifest, job.launchPath);
+  if (!launchPath || !resolveLaunch(dir, launchPath)) throw new Error(`El juego no trae el ejecutable "${job.launchPath}". Avisale al desarrollador.`);
+  settings.installs[job.slug] = { slug: job.slug, name: job.name, version: job.version, platform: job.platform, dir, launchPath, manifest, installedAt: new Date().toISOString() };
   await saveSettings();
 }
 
@@ -137,10 +157,22 @@ function registerIpc() {
   });
   handle("auth:login", async (identifier: string, password: string) => {
     const r = await api<{ token: string; user: unknown }>("POST", "/auth/login", { identifier, password, deviceType: "launcher", deviceName: `Launcher ${os.hostname()}`.slice(0, 100) });
-    await saveToken(r.token);
+    await saveToken(r.token, r.user);
     return r.user;
   });
-  handle("auth:me", async () => (token ? (await api<{ user: unknown }>("GET", "/me")).user : null));
+  /** La sesión dura hasta "Cerrar sesión": solo se pierde si el servidor la rechaza (401). */
+  handle("auth:me", async () => {
+    if (!token) return null;
+    try {
+      const u = await api<unknown>("GET", "/me", undefined, 20_000); // /me devuelve el usuario directo
+      await saveToken(token, u);
+      return u;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return null;
+      if (cachedUser) return cachedUser; // sin conexión o servidor dormido: seguir con la sesión guardada
+      throw e;
+    }
+  });
   handle("auth:logout", async () => {
     await api("POST", "/auth/logout").catch(() => undefined);
     await saveToken(null);
@@ -161,6 +193,10 @@ function registerIpc() {
   });
 
   handle("games:state", () => state());
+  handle("app:updateReady", () => updateReady);
+  handle("app:restartToUpdate", () => {
+    if (updateReady) setImmediate(() => autoUpdater.quitAndInstall(true, true));
+  });
   handle("games:install", (slug: string) => startDownload(slug, "install"));
   handle("games:update", (slug: string) => startDownload(slug, "update"));
   handle("games:pause", (slug: string) => downloads.pause(slug));
@@ -190,7 +226,7 @@ function registerIpc() {
   handle("games:launch", async (slug: string) => {
     const i = settings.installs[slug];
     if (!i) throw new Error("No está instalado.");
-    const exe = resolveLaunch(i.dir, i.launchPath);
+    const exe = resolveLaunch(i.dir, findLaunchPath(i.manifest, i.launchPath) ?? i.launchPath);
     if (!exe || !(await fs.access(exe).then(() => true, () => false))) throw new Error("No se encontró el ejecutable. Probá reinstalar.");
     if (process.platform !== "win32") await fs.chmod(exe, 0o755).catch(() => undefined);
     const child = spawn(exe, [], { cwd: path.dirname(exe), detached: true, stdio: "ignore" });
@@ -201,6 +237,15 @@ function registerIpc() {
     child.unref();
   });
 }
+
+// Una sola ventana: si se abre de nuevo, se enfoca la existente (dos copias compartirían los mismos datos).
+if (!app.requestSingleInstanceLock()) app.quit();
+app.on("second-instance", () => {
+  if (win) {
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  }
+});
 
 app.whenReady().then(() => {
   settings = loadSettings();
@@ -220,7 +265,30 @@ app.whenReady().then(() => {
     return { action: "deny" };
   });
   win.webContents.on("will-navigate", (e) => e.preventDefault());
+  // F12: herramientas de diagnóstico (para reportar errores).
+  win.webContents.on("before-input-event", (_e, input) => {
+    if (input.type === "keyDown" && input.key === "F12") win?.webContents.toggleDevTools();
+  });
   void win.loadFile(path.join(__dirname, "../dist/index.html"));
+  setupAutoUpdate();
 });
+
+// ── Actualización automática del propio launcher (solo en la versión instalada) ──
+let updateReady: string | null = null;
+function setupAutoUpdate() {
+  if (!app.isPackaged) return;
+  if (process.env.ALPHASHOOK_UPDATE_URL) autoUpdater.setFeedURL({ provider: "generic", url: process.env.ALPHASHOOK_UPDATE_URL }); // pruebas
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true; // si no reinicia, se aplica al cerrar
+  autoUpdater.on("update-downloaded", (info) => {
+    updateReady = info.version;
+    logLine(`actualización ${info.version} descargada`);
+    win?.webContents.send("app:update", updateReady);
+  });
+  autoUpdater.on("error", (e) => logLine(`actualización: ${e.message}`));
+  const check = () => void autoUpdater.checkForUpdates().catch((e: Error) => logLine(`actualización: ${e.message}`));
+  setTimeout(check, 10_000);
+  setInterval(check, 4 * 3600 * 1000);
+}
 
 app.on("window-all-closed", () => app.quit());

@@ -39,3 +39,5 @@
 | 35 | 2026-11-04 | Todas las llamadas del launcher pasan por el proceso principal (Bearer cifrado con safeStorage) | Sin CORS, token fuera de la interfaz, ventana con sandbox |
 | 36 | 2026-11-04 | Actualizar conserva archivos creados por el juego; desinstalar borra solo los del manifiesto | Protege partidas y no toca archivos ajenos |
 | 37 | 2026-11-04 | Carpeta ordenada: `bat/` (scripts), `carga/` (juegos.json); el Panel queda en la raíz | Pedido del usuario: saber qué abrir y dónde |
+| 38 | 2026-11-04 | Auto-actualización del launcher con electron-updater (proveedor genérico): la API redirige `/v1/launcher/*` a URLs firmadas de R2 | Sin hosting extra ni bucket público; se publica desde el Panel |
+| 39 | 2026-11-04 | Sesiones deslizantes (30 días renovables) y sesión del launcher válida sin conexión hasta "Cerrar sesión" o 401 | Pedido del usuario: no volver a iniciar sesión |

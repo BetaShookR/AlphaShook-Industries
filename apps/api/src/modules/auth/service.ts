@@ -135,7 +135,11 @@ export function createAuthService(db: Database) {
       if (!row || row.user.status !== "active") return null;
       // Actualiza lastUsedAt como máximo una vez por minuto para no escribir en cada request.
       if (Date.now() - row.session.lastUsedAt.getTime() > 60_000) {
-        await db.update(sessions).set({ lastUsedAt: new Date() }).where(eq(sessions.id, row.session.id));
+        // Sesión deslizante: si se usa, se renueva (quien la use al menos una vez por mes no vuelve a iniciar sesión).
+        const renew = row.session.expiresAt.getTime() - Date.now() < SESSION_TTL_MS / 2;
+        await db.update(sessions)
+          .set({ lastUsedAt: new Date(), ...(renew && { expiresAt: new Date(Date.now() + SESSION_TTL_MS) }) })
+          .where(eq(sessions.id, row.session.id));
       }
       return row;
     },

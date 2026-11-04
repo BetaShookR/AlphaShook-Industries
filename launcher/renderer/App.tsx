@@ -27,21 +27,25 @@ function useAction() {
 
 export function App() {
   const [user, setUser] = useState<PublicUser | null | undefined>(undefined);
+  const [bootError, setBootError] = useState<string>();
+  const [update, setUpdate] = useState<string | null>(null);
   const [identity, setIdentity] = useState<StoreIdentity>({ name: "AlphaShook", logoUrl: null });
   const [page, setPage] = useState<Page>({ name: "store" });
   const [games, setGames] = useState<GamesState>({ installs: {}, jobs: [], platform: "windows", libraryDir: "" });
 
   useEffect(() => {
-    call(alpha().me()).then(setUser, () => setUser(null));
+    call(alpha().me()).then((u) => setUser(u ?? null), (e) => { setBootError(msg(e)); setUser(null); });
     call(alpha().api<StoreIdentity>("GET", "/store/identity")).then(setIdentity, () => undefined);
     call(alpha().state()).then(setGames, () => undefined);
     const off1 = alpha().onState(setGames);
     const off2 = alpha().onAuthExpired(() => setUser(null));
-    return () => { off1(); off2(); };
+    const off3 = alpha().onUpdate(setUpdate);
+    call(alpha().updateReady()).then(setUpdate, () => undefined);
+    return () => { off1(); off2(); off3(); };
   }, []);
 
-  if (user === undefined) return <div className="splash"><div className="brand-mark big">{identity.name[0]}</div></div>;
-  if (!user) return <Login identity={identity} onLogin={setUser} />;
+  if (user === undefined) return <Splash name={identity.name} />;
+  if (!user) return <Login identity={identity} onLogin={setUser} initialError={bootError} />;
 
   const active = games.jobs.filter((j) => j.status !== "error" && j.status !== "paused").length;
   const nav = (p: Page, label: string, badge?: number) => (
@@ -71,6 +75,12 @@ export function App() {
         </div>
       </aside>
       <main className="main">
+        {update && (
+          <div className="alert ok row between">
+            <span>Hay una versión nueva del launcher (v{update}). Se instala sola al cerrarlo, o ahora:</span>
+            <button className="btn primary" onClick={() => void call(alpha().restartToUpdate())}>Reiniciar y actualizar</button>
+          </div>
+        )}
         {page.name === "store" && <Store open={(slug) => setPage({ name: "product", slug })} />}
         {page.name === "product" && <Product slug={page.slug} games={games} back={() => setPage({ name: "store" })} goLibrary={() => setPage({ name: "library" })} />}
         {page.name === "library" && <Library games={games} open={(slug) => setPage({ name: "product", slug })} goDownloads={() => setPage({ name: "downloads" })} />}
@@ -81,8 +91,24 @@ export function App() {
   );
 }
 
+function Splash({ name }: { name: string }) {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div className="splash">
+      <div style={{ display: "grid", gap: 16, justifyItems: "center", textAlign: "center" }}>
+        <div className="brand-mark big">{name[0]}</div>
+        {slow && <p className="muted">Conectando con el servidor…<br />Si estuvo inactivo, puede tardar hasta 1 minuto en despertar.</p>}
+      </div>
+    </div>
+  );
+}
+
 // ───────────── Inicio de sesión ─────────────
-function Login({ identity, onLogin }: { identity: StoreIdentity; onLogin: (u: PublicUser) => void }) {
+function Login({ identity, onLogin, initialError }: { identity: StoreIdentity; onLogin: (u: PublicUser) => void; initialError?: string | undefined }) {
   const [id, setId] = useState("");
   const [pw, setPw] = useState("");
   const a = useAction();
@@ -97,7 +123,7 @@ function Login({ identity, onLogin }: { identity: StoreIdentity; onLogin: (u: Pu
         <div className="brand center"><div className="brand-mark big">{identity.name[0]}</div></div>
         <h1>Iniciar sesión</h1>
         <p className="muted">Usá tu cuenta de {identity.name}. Es la misma de la tienda web.</p>
-        {a.error && <div className="alert error">{a.error}</div>}
+        {(a.error ?? initialError) && <div className="alert error">{a.error ?? initialError}</div>}
         <label>Correo o usuario<input name="identifier" value={id} onChange={(e) => setId(e.target.value)} required autoFocus /></label>
         <label>Contraseña<input name="password" type="password" value={pw} onChange={(e) => setPw(e.target.value)} required /></label>
         <button className="btn primary" disabled={a.busy}>{a.busy ? "Entrando…" : "Entrar"}</button>

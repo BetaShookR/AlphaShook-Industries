@@ -169,3 +169,16 @@ export async function uninstall(installDir: string, manifest: Manifest): Promise
 export function resolveLaunch(installDir: string, launchPath: string): string | null {
   return safeJoin(path.resolve(installDir), launchPath);
 }
+
+/**
+ * Busca el ejecutable en el manifiesto. Si el desarrollador puso solo el nombre ("Juego.exe") pero
+ * el .zip lo tiene dentro de una carpeta ("Juego PC/Juego.exe"), usa esa ruta (la más corta).
+ */
+export function findLaunchPath(manifest: Manifest, launchPath: string): string | null {
+  const norm = (p: string) => p.replace(/\\/g, "/").replace(/^\.?\/+/, "").toLowerCase();
+  const want = norm(launchPath);
+  const exact = manifest.find((f) => norm(f) === want);
+  if (exact) return exact;
+  const byEnd = manifest.filter((f) => norm(f).endsWith("/" + want)).sort((a, b) => a.length - b.length);
+  return byEnd[0] ?? null;
+}

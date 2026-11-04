@@ -11,7 +11,7 @@
 | 4. Biblioteca, productos gratuitos y lista de deseos | ✅ Terminada — verificada en Windows (biblioteca y catálogo con juegos reales) |
 | 4b. Comunidad: foros, reseñas y valoraciones, perfiles públicos, amigos | ✅ Terminada — publicada y verificada online |
 | 5. Portal de desarrolladores (sin subida de archivos) | ✅ Terminada — publicada y verificada online |
-| 6. Launcher de escritorio + subida/descarga con Cloudflare R2 | 🟡 Hecha y probada en Linux — falta crear R2, publicar y probar el instalador en Windows |
+| 6. Launcher de escritorio + subida/descarga con Cloudflare R2 | 🟡 Verificada en Windows con R2 real (subir, instalar, jugar) — falta publicar los últimos arreglos y probar el instalador .exe |
 | 7–10 | ⏳ Pendientes (7 Android, 8 pagos, 9 panel admin completo, 10 lanzamiento) |
 
 ## Etapa 1 — Terminado
@@ -96,14 +96,18 @@
 - Portal web: sección "Versiones descargables" en `/dev/p/:slug` (subida .zip directa a R2 con barra de progreso, ejecutable, novedades, estado, borrar).
 - Launcher (`launcher/`, Electron 44 + React + Vite): login (misma cuenta), tienda con búsqueda, ficha y "agregar gratis", biblioteca, descargas (progreso, velocidad, tiempo restante, pausar/reanudar/cancelar/reintentar; continúa tras cerrar el launcher), verificación SHA-256, comprobación de espacio, instalación en carpeta propia (bloquea zip-slip y carpetas ajenas), aviso y aplicación de actualizaciones conservando partidas, desinstalar (conserva archivos creados por el juego), jugar, ajustes (carpeta y servidor).
 - Instaladores: Windows NSIS (`bat\crear-launcher.bat` o Panel → Launcher), Linux AppImage + .deb (`npm run dist:linux`).
+- Actualización automática del launcher: electron-updater; `GET /v1/launcher/:archivo` redirige a R2 (`launcher/`); `pnpm launcher:publish` sube instalador + latest.yml; Panel → Launcher → "Publicar actualización" (sube versión, crea instalador y publica). Aviso "Reiniciar y actualizar" o se aplica al cerrar.
 - Carpeta ordenada: scripts en `bat/`, `juegos.json` en `carga/`. Panel: pestaña Launcher y "Configurar R2" en Ajustes.
 
 ## Probado (Etapa 6)
-- Linux/PG16: 55/55 tests de API (5 nuevos: sin R2, validaciones y permisos, subida+SHA-256, tamaño incorrecto, descarga solo dueños y última versión).
+- Linux/PG16: 57/57 tests de API (7 nuevos: sin R2, validaciones y permisos, subida+SHA-256, tamaño incorrecto, descarga solo dueños y última versión).
 - R2Storage contra servidor S3 local (s3rver): PUT firmado, HEAD, SHA-256, descarga parcial (206), borrar. Falta la prueba con la cuenta real de R2.
 - E2E portal (Chromium): subir .zip 3 MB con progreso → "Lista" → visible en la tienda; 390 px sin desborde del formulario; sin errores JS.
 - Launcher, núcleo (5 tests): pausa, reinicio del launcher y reanudación con Range, archivo dañado rechazado, actualización conservando partida, desinstalación parcial, carpeta ajena protegida.
 - Launcher E2E (Electron real, Xvfb): login incorrecto/correcto, tienda, búsqueda, agregar gratis, instalar, ejecutar el juego, nueva versión subida → "Actualizar" → actualizado conservando partida, desinstalar, ajustes; sin errores JS.
+- Windows 10 + R2 real (2026-11-04): subida de FTW 1.3.7 (20,9 MB) desde la tienda online → "Lista"; launcher: instalar, jugar y reabrir con sesión guardada OK.
+- Arreglos tras la prueba en Windows: CORS del bucket (configuración), endpoint de R2 aceptado con el bucket al final, .apk rechazado en Windows, ejecutable encontrado aunque esté dentro de una carpeta del .zip, sesión guardada al reabrir (/me) que no se pierde sin conexión (solo con "Cerrar sesión" o 401), sesiones deslizantes de 30 días en la API, instalador Windows sin winCodeSign (error de enlaces simbólicos), una sola instancia, F12 de diagnóstico, aviso si el servidor tarda.
+- Auto-actualización probada en Linux: AppImage 0.1.0 detectó y descargó la 0.1.1 publicada con el script (vía API → R2 local).
 - AppImage y .deb generados; el AppImage arranca. Instalador .exe: se genera en Windows (no probado todavía).
 
 ## Herramienta: Panel AlphaShook
@@ -118,7 +122,7 @@
 - Probado local en modo producción: health, tienda, rutas profundas, API, 404 JSON, migraciones automáticas. 34/34 tests.
 
 ## Pendiente
-- Etapa 6: crear cuenta R2 + CORS, cargar claves (Panel local y Render), publicar, crear el .exe y probarlo en Windows 10/11. Sin firma de código (Windows SmartScreen avisará). Sin actualización automática del propio launcher, notificaciones ni perfil dentro del launcher (pendiente). Archivos > 5 GB requieren subida multiparte (futuro).
+- Etapa 6: crear cuenta R2 + CORS, cargar claves (Panel local y Render), publicar, crear el .exe y probarlo en Windows 10/11. Sin firma de código (Windows SmartScreen avisará). La primera versión con auto-actualización se instala a mano una vez. Sin notificaciones ni perfil dentro del launcher (pendiente). Archivos > 5 GB requieren subida multiparte (futuro).
 - Publicar: crear Neon + Brevo + repo privado + Blueprint en Render (pasos en `docs/DEPLOY.md`).
 - Etapa 5: verificar en Windows y publicar. Subida de versiones (archivos) en Etapa 6 con R2. Precio > 0 se puede cargar pero no se puede comprar hasta Etapa 8.
 - Comunidad: verificar en Windows (`iniciar.bat`) y publicar con `subir-a-github.bat` (Render migra solo).

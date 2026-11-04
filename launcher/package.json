@@ -1,9 +1,12 @@
 {
   "name": "alphashook-launcher",
   "productName": "AlphaShook Launcher",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Launcher de escritorio de AlphaShook",
-  "author": { "name": "AlphaShook Corporation", "email": "soporte@alphashook.local" },
+  "author": {
+    "name": "AlphaShook Corporation",
+    "email": "soporte@alphashook.local"
+  },
   "homepage": "https://alphashook.onrender.com",
   "private": true,
   "main": "dist-electron/main.js",
@@ -15,6 +18,7 @@
     "dist:linux": "npm run build && electron-builder --linux AppImage deb --x64 --publish never"
   },
   "dependencies": {
+    "electron-updater": "6.8.10",
     "yauzl": "3.2.0"
   },
   "devDependencies": {
@@ -33,10 +37,38 @@
   "build": {
     "appId": "com.alphashook.launcher",
     "productName": "AlphaShook Launcher",
-    "directories": { "output": "release" },
-    "files": ["dist/**", "dist-electron/**", "package.json"],
-    "win": { "target": "nsis", "artifactName": "AlphaShook-Launcher-Setup-${version}.${ext}" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false },
-    "linux": { "target": ["AppImage", "deb"], "category": "Game", "maintainer": "AlphaShook Corporation", "artifactName": "AlphaShook-Launcher-${version}.${ext}" }
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "AlphaShook-Launcher-Setup-${version}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Game",
+      "maintainer": "AlphaShook Corporation",
+      "artifactName": "AlphaShook-Launcher-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://alphashook.onrender.com/v1/launcher/"
+      }
+    ]
   }
 }

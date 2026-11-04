@@ -178,6 +178,9 @@ class Panel(tk.Tk):
         row = ttk.Frame(c, style="Card.TFrame"); row.pack(anchor="w")
         ttk.Button(row, text="Crear instalador", style="Accent.TButton", command=self.build_launcher).pack(side="left", padx=(0, 8))
         ttk.Button(row, text="Abrir carpeta del instalador", command=self.open_release).pack(side="left")
+        c = self._card(tabs["Launcher"], "Publicar una actualización del launcher",
+                       "Sube el número de versión, crea el instalador y lo sube a R2. Los launchers instalados se actualizan solos (al abrirlos o cada 4 horas).")
+        ttk.Button(c, text="Publicar actualización", style="Accent.TButton", command=self.publish_launcher).pack(anchor="w")
 
         # Publicar
         c = self._card(tabs["Publicar"], "Subir cambios a GitHub (Render actualiza la tienda online solo)",
@@ -343,17 +346,35 @@ class Panel(tk.Tk):
             self.write("No había cambios nuevos; se intenta subir lo pendiente.", "info")
         self.run(cmds, "local", lambda ok: ok and self.write("✓ Subido. La tienda online se actualiza en 3-4 minutos.", "ok"))
 
+    def _launcher_install_cmds(self) -> list[list[str]]:
+        """Instala dependencias del launcher solo la primera vez o si cambió package.json."""
+        stamp = LAUNCHER / "node_modules" / ".package-lock.json"
+        pkg = LAUNCHER / "package.json"
+        if stamp.exists() and stamp.stat().st_mtime >= pkg.stat().st_mtime:
+            return []
+        return [["npm", "install", "--no-audit", "--no-fund"]]
+
     def open_launcher(self) -> None:
         def go(ok: bool) -> None:
             if ok:
                 subprocess.Popen(["npx", "electron", "."], cwd=LAUNCHER, shell=WIN, creationflags=NO_WINDOW,
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 self.write("✓ Abriendo el launcher…", "ok")
-        self.run([["npm", "install", "--no-audit", "--no-fund"], ["npm", "run", "build"]], "local", go, cwd=LAUNCHER)
+        self.run(self._launcher_install_cmds() + [["npm", "run", "build"]], "local", go, cwd=LAUNCHER)
 
     def build_launcher(self) -> None:
-        self.run([["npm", "install", "--no-audit", "--no-fund"], ["npm", "run", "dist:win"]], "local",
+        self.run(self._launcher_install_cmds() + [["npm", "run", "dist:win"]], "local",
                  lambda ok: ok and (self.write("✓ Instalador creado en launcher\\release.", "ok"), self.open_release()), cwd=LAUNCHER)
+
+    def publish_launcher(self) -> None:
+        if not messagebox.askyesno("Panel AlphaShook", "¿Publicar una versión nueva del launcher para todos los jugadores?"):
+            return
+        install = self._launcher_install_cmds()
+
+        def upload(ok: bool) -> None:
+            if ok:
+                self.run([["pnpm", "--silent", "launcher:publish"]], "local")
+        self.run(install + [["npm", "version", "patch", "--no-git-tag-version"], ["npm", "run", "dist:win"]], "local", upload, cwd=LAUNCHER)
 
     def open_release(self) -> None:
         d = LAUNCHER / "release"

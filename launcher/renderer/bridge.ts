@@ -32,6 +32,9 @@ interface Alpha {
   launch(slug: string): Res<void>;
   onState(fn: (s: GamesState) => void): () => void;
   onAuthExpired(fn: () => void): () => void;
+  updateReady(): Res<string | null>;
+  restartToUpdate(): Res<void>;
+  onUpdate(fn: (version: string) => void): () => void;
 }
 declare global {
   interface Window { alpha: Alpha }
@@ -64,6 +67,7 @@ const MESSAGES: Record<string, string> = {
 };
 export const msg = (e: unknown) => {
   const code = e instanceof Error ? e.message : String(e);
+  if (code.startsWith("network_error:")) return `${MESSAGES.network_error} (detalle: ${code.slice(14)})`;
   return MESSAGES[code] ?? code;
 };
 

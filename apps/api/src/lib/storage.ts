@@ -61,6 +61,11 @@ export class R2Storage implements ObjectStorage {
     for await (const chunk of r.body as unknown as AsyncIterable<Uint8Array>) h.update(chunk);
     return h.digest("hex");
   }
+  /** Subida directa desde el servidor/scripts (archivos del launcher). */
+  async put(key: string, body: Uint8Array, contentType: string) {
+    const r = await this.client.fetch(this.url(key).toString(), { method: "PUT", body: body as unknown as BodyInit, headers: { "content-type": contentType } });
+    if (!r.ok) throw new Error(`R2 PUT ${r.status}: ${await r.text()}`);
+  }
   async delete(key: string) {
     const r = await this.client.fetch(this.url(key).toString(), { method: "DELETE" });
     if (!r.ok && r.status !== 404) throw new Error(`R2 DELETE ${r.status}`);

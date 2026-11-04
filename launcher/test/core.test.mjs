@@ -115,4 +115,11 @@ test("no instala sobre una carpeta ajena", async () => {
   assert.ok((await inst.freeBytes(path.join(tmp, "no-existe", "x"))) > 0);
 });
 
+test("encuentra el ejecutable aunque esté dentro de una carpeta", () => {
+  const m = ["FTW PC/sonidos/a.wav", "FTW PC/FudgeThroneWars.exe", "otra/x/FudgeThroneWars.exe"];
+  assert.equal(inst.findLaunchPath(m, "FudgeThroneWars.exe"), "FTW PC/FudgeThroneWars.exe");
+  assert.equal(inst.findLaunchPath(m, "ftw pc\\fudgethronewars.exe"), "FTW PC/FudgeThroneWars.exe");
+  assert.equal(inst.findLaunchPath(m, "nada.exe"), null);
+});
+
 test.after(() => { srv.close(); return fs.rm(tmp, { recursive: true, force: true }); });

@@ -122,3 +122,14 @@ describe("ajustes de R2 y validaciones extra", () => {
     expect(r.json().details[0].path).toBe("launchPath");
   });
 });
+
+describe("sesión deslizante", () => {
+  it("renueva el vencimiento cuando la sesión se usa", async () => {
+    const u = `Rjugador_${sfx}`;
+    await sql`update sessions set expires_at = now() + interval '5 days', last_used_at = now() - interval '2 minutes'
+      where user_id = (select id from users where username = ${u})`;
+    expect((await call("jugador", "GET", "/v1/me")).statusCode).toBe(200);
+    const [r] = await sql`select expires_at from sessions where user_id = (select id from users where username = ${u})`;
+    expect(new Date(r!.expires_at).getTime() - Date.now()).toBeGreaterThan(25 * 24 * 3600 * 1000);
+  });
+});
