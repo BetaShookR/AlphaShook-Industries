@@ -9,6 +9,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "db:generate": "pnpm --filter @alphashook/api db:generate",
-    "db:migrate": "pnpm --filter @alphashook/api db:migrate"
+    "db:migrate": "pnpm --filter @alphashook/api db:migrate",
+    "catalog:import": "pnpm --filter @alphashook/api catalog:import",
+    "dev:web": "pnpm --filter @alphashook/web dev"
   }
 }

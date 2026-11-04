@@ -6,14 +6,20 @@
   "scripts": {
     "dev": "tsx watch --env-file=.env src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node --env-file=.env dist/server.js",
+    "start": "node --env-file-if-exists=.env dist/server.js",
+    "start:prod": "node --env-file-if-exists=.env dist/db/migrate.js && node --env-file-if-exists=.env dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file=.env src/db/migrate.ts"
+    "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
+    "catalog:import": "tsx --env-file=.env src/scripts/import-catalog.ts"
   },
   "dependencies": {
     "@alphashook/shared": "workspace:*",
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/static": "^8.3.0",
+    "@node-rs/argon2": "^2.2.2",
     "drizzle-orm": "^0.44.0",
     "fastify": "^5.6.0",
     "postgres": "^3.4.7",

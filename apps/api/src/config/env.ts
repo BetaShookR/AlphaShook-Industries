@@ -7,6 +7,18 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   DATABASE_URL: z.string().url(),
   CORS_ORIGINS: z.string().default(""),
+  PUBLIC_WEB_URL: z.string().url().default("http://localhost:5173"),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  /** Carpeta del build de la tienda web; si existe, la API también la sirve (un solo servicio). */
+  WEB_DIST_DIR: z.string().optional(),
+  MAIL_PROVIDER: z.enum(["log", "brevo"]).default("log"),
+  BREVO_API_KEY: z.string().optional(),
+  MAIL_FROM_EMAIL: z.string().email().optional(),
+  MAIL_FROM_NAME: z.string().default("AlphaShook"),
+}).superRefine((e, ctx) => {
+  if (e.MAIL_PROVIDER === "brevo" && (!e.BREVO_API_KEY || !e.MAIL_FROM_EMAIL)) {
+    ctx.addIssue({ code: "custom", path: ["BREVO_API_KEY"], message: "MAIL_PROVIDER=brevo requiere BREVO_API_KEY y MAIL_FROM_EMAIL" });
+  }
 });
 
 export type Env = z.infer<typeof envSchema>;

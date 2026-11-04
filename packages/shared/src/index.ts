@@ -13,3 +13,5 @@ export const healthResponseSchema = z.object({
   uptimeSec: z.number(),
 });
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
+export * from "./auth.js";
+export * from "./catalog.js";

@@ -1,0 +1,27 @@
+{
+  "products": [
+    {
+      "slug": "nombre-del-juego",
+      "type": "game",
+      "name": "Nombre del juego",
+      "shortDescription": "Una línea que resuma el juego.",
+      "description": "Descripción completa.\nPuede tener varias líneas.",
+      "developer": { "slug": "alphashook-studios", "name": "AlphaShook Studios" },
+      "publisher": { "slug": "alphashook-digital", "name": "AlphaShook Digital" },
+      "coverUrl": null,
+      "priceCents": 0,
+      "currency": "USD",
+      "status": "draft",
+      "featured": false,
+      "releaseDate": "2026-12-01",
+      "platforms": ["windows"],
+      "categories": ["indie"],
+      "tags": [{ "slug": "un-jugador", "name": "Un jugador" }],
+      "media": [],
+      "requirements": [
+        { "platform": "windows", "level": "minimum", "specs": { "os": "Windows 10", "cpu": "", "ram": "4 GB", "gpu": "", "storage": "1 GB" } }
+      ],
+      "releases": [{ "version": "1.0.0", "platform": "windows", "sizeBytes": 104857600, "changelog": "Primera versión." }]
+    }
+  ]
+}

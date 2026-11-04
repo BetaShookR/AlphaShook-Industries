@@ -1,0 +1,1 @@
+ALTER TABLE "releases" ALTER COLUMN "published_at" SET DEFAULT clock_timestamp();

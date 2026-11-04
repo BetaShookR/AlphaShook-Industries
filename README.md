@@ -18,4 +18,7 @@ pnpm build
 pnpm db:migrate
 pnpm test
 pnpm dev        # API en http://127.0.0.1:3000/health
+pnpm dev:web    # (otra ventana) tienda en http://localhost:5173
 ```
+
+Cargar productos: `pnpm catalog:import ruta\al\archivo.json` (plantilla: `docs/catalog-template.json`).

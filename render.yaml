@@ -1,0 +1,32 @@
+# Blueprint de Render: API + tienda web en un solo servicio. La base de datos es externa (Neon).
+services:
+  - type: web
+    name: alphashook
+    runtime: node
+    plan: free
+    region: virginia
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm --filter @alphashook/api start:prod
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: WEB_DIST_DIR
+        value: ../web/dist
+      - key: DATABASE_URL
+        sync: false
+      - key: PUBLIC_WEB_URL
+        sync: false
+      - key: MAIL_PROVIDER
+        value: brevo
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM_EMAIL
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: AlphaShook

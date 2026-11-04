@@ -1,0 +1,44 @@
+{
+  "products": [
+    {
+      "slug": "fudge-throne-wars",
+      "type": "game",
+      "name": "FUDGE: Throne Wars",
+      "shortDescription": "Esquivá y destruí inodoros en varios modos de juego, con multijugador online.",
+      "description": "FUDGE: Throne Wars es un juego de acción con varios modos: la caída infinita esquivando inodoros y combates en mapa abierto contra ellos.\n\nMejorá tu personaje en la tienda, conseguí habilidades especiales y competí online con la comunidad.",
+      "developer": { "slug": "alpha-sk-studios", "name": "Alpha SK Studios" },
+      "publisher": { "slug": "alphashook-studios", "name": "AlphaShook Studios" },
+      "priceCents": 0,
+      "status": "published",
+      "featured": true,
+      "platforms": ["android"],
+      "categories": ["accion", "casual", "multijugador", "indie"]
+    },
+    {
+      "slug": "apocalipsis-shock",
+      "type": "game",
+      "name": "Apocalipsis Shock",
+      "shortDescription": "Sobreviví al apocalipsis zombi con tus compañeros desde la zona segura.",
+      "description": "Apocalipsis Shock es un juego de supervivencia zombi para Android.\n\nDefendé la base, salí de la zona segura a combatir, mejorá tus armas y enfrentá jefes.",
+      "developer": { "slug": "alpha-sk-studios", "name": "Alpha SK Studios" },
+      "publisher": { "slug": "alphashook-studios", "name": "AlphaShook Studios" },
+      "priceCents": 0,
+      "status": "published",
+      "platforms": ["android"],
+      "categories": ["accion", "terror", "indie"]
+    },
+    {
+      "slug": "alpha-zombies",
+      "type": "game",
+      "name": "Alpha Zombies",
+      "shortDescription": "Oleadas infinitas de zombis, jefes cada 5 rondas y compañeros que pelean a tu lado.",
+      "description": "Alpha Zombies es un shooter de oleadas infinitas para PC.\n\nCada 5 rondas aparece un jefe. Comprá armas, chalecos, granadas y drones en la tienda, y armá tu equipo con hasta 20 compañeros.",
+      "developer": { "slug": "alpha-sk-studios", "name": "Alpha SK Studios" },
+      "publisher": { "slug": "alphashook-studios", "name": "AlphaShook Studios" },
+      "priceCents": 0,
+      "status": "published",
+      "platforms": ["windows"],
+      "categories": ["accion", "indie"]
+    }
+  ]
+}
