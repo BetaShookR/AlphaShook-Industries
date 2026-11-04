@@ -11,6 +11,7 @@
     "db:generate": "pnpm --filter @alphashook/api db:generate",
     "db:migrate": "pnpm --filter @alphashook/api db:migrate",
     "catalog:import": "pnpm --filter @alphashook/api catalog:import",
+    "user:role": "pnpm --filter @alphashook/api user:role",
     "dev:web": "pnpm --filter @alphashook/web dev"
   }
 }

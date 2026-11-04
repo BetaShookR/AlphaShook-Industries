@@ -83,7 +83,7 @@
 ## Pendiente
 - Publicar: crear Neon + Brevo + repo privado + Blueprint en Render (pasos en `docs/DEPLOY.md`).
 - Comunidad: verificar en Windows (`iniciar.bat`) y publicar con `subir-a-github.bat` (Render migra solo).
-- Comunidad: asignar rol moderador requiere SQL hasta el panel admin (Etapa 9); sin avatares (requiere almacenamiento R2); sin notificaciones de amistad/respuestas (launcher/Android).
+- Comunidad: asignar moderadores con `cambiar-rol.bat` (local u online; `pnpm user:role <usuario> <rol>`) hasta el panel admin (Etapa 9). Sin avatares (requiere almacenamiento R2); sin notificaciones de amistad/respuestas (launcher/Android).
 - Biblioteca: versiones instaladas y estado de descarga → requieren el launcher (Etapa 6).
 - Home: populares, promociones, patrocinados y recomendaciones (requieren estadísticas/etapa 9).
 - Adquisición y biblioteca (Etapa 4).
