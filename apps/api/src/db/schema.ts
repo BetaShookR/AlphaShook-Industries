@@ -131,6 +131,9 @@ export const products = pgTable(
     featured: boolean("featured").notNull().default(false),
     releaseDate: date("release_date"),
     platforms: platform("platforms").array().notNull().default(sql`'{}'`),
+    /** Motivo del último rechazo en revisión (portal de desarrolladores). */
+    reviewNote: text("review_note"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     search: tsvector("search").generatedAlwaysAs(
@@ -308,4 +311,41 @@ export const forumPosts = pgTable(
     editedAt: timestamp("edited_at", { withTimezone: true }),
   },
   (t) => [index("forum_posts_thread_idx").on(t.threadId, t.createdAt)],
+);
+
+// ───────────── Portal de desarrolladores (Etapa 5) ─────────────
+export const orgMemberRole = pgEnum("org_member_role", ["owner", "member"]);
+export const applicationStatus = pgEnum("application_status", ["pending", "approved", "rejected"]);
+
+export const orgMembers = pgTable(
+  "org_members",
+  {
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    role: orgMemberRole("role").notNull().default("member"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.userId] }), index("org_members_user_idx").on(t.userId)],
+);
+
+/** Solicitudes para publicar como desarrollador. Una sola pendiente por usuario. */
+export const developerApplications = pgTable(
+  "developer_applications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    studioName: text("studio_name").notNull(),
+    website: text("website"),
+    about: text("about").notNull(),
+    status: applicationStatus("status").notNull().default("pending"),
+    reviewNote: text("review_note"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("developer_applications_pending_idx").on(t.userId).where(sql`${t.status} = 'pending'`),
+    index("developer_applications_status_idx").on(t.status, t.createdAt),
+  ],
 );

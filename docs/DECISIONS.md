@@ -29,3 +29,7 @@
 | 25 | 2026-11-04 | Perfil en tabla `profiles` aparte; visibilidad public/friends/private aplica a biblioteca y bio (las reseñas son públicas) | No tocar `users`; privacidad simple |
 | 26 | 2026-11-04 | Foros: uno general + uno por producto publicado; moderación oculta (no borra) | Sin categorías manuales hasta el panel admin; se conserva evidencia |
 | 27 | 2026-11-04 | Moderadores = rol `moderator`/`admin` existente; límite de escritura por IP en comunidad | Reutiliza roles y rate limit ya instalados |
+| 28 | 2026-11-04 | Panel de mantenimiento en Python/tkinter (herramienta interna, no parte del producto) | Python ya instalado, cero dependencias, ventana propia; el producto sigue en Node/React |
+| 29 | 2026-11-04 | Portal sin subida de archivos; versiones/binarios con R2 en Etapa 6 (launcher) | Decisión del usuario; subida y descarga se prueban juntas |
+| 30 | 2026-11-04 | Revisión y aprobación solo rol admin; editar un producto publicado no requiere nueva revisión | Simple al inicio; se puede endurecer cuando haya desarrolladores externos |
+| 31 | 2026-11-04 | El portal escribe productos a través del importador del catálogo | Una sola lógica de escritura y validación |

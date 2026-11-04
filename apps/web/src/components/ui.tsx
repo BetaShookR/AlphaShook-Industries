@@ -33,6 +33,8 @@ export function Header() {
         <div className="account">
           {!ready ? null : user ? (
             <>
+              {user.role === "admin" && <Link to="/admin" className="btn small">Admin</Link>}
+              {(user.role === "developer" || user.role === "admin") && <Link to="/dev" className="btn small">Portal</Link>}
               <Link to="/account" className="btn small">{user.username}</Link>
               <button className="btn small" onClick={() => void logout().then(() => nav("/"))}>Salir</button>
             </>

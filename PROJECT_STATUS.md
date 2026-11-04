@@ -10,7 +10,8 @@
 | 3. Catálogo y tienda web | ✅ Terminada — verificada en Windows (tienda funcionando con `iniciar.bat`) |
 | 4. Biblioteca, productos gratuitos y lista de deseos | ✅ Terminada — verificada en Windows (biblioteca y catálogo con juegos reales) |
 | 4b. Comunidad: foros, reseñas y valoraciones, perfiles públicos, amigos | ✅ Terminada — probada en Linux/PG16; falta verificar en Windows y publicar |
-| 5–10 | ⏳ Pendientes (panel de administración: Etapa 9, se respeta el orden) |
+| 5. Portal de desarrolladores (sin subida de archivos) | ✅ Terminada — probada en Linux/PG16; falta verificar en Windows y publicar |
+| 6–10 | ⏳ Pendientes (6: launcher + subida/descarga de archivos con R2; 9: panel admin completo) |
 
 ## Etapa 1 — Terminado
 - Monorepo pnpm: `apps/api`, `packages/shared`, `packages/config`.
@@ -73,6 +74,24 @@
 - Linux/PG16: typecheck y build OK; 44/44 tests de API (10 nuevos: reseñas, privacidad, amigos, foros, moderación, permisos).
 - E2E en navegador (Playwright) con 2 cuentas: editar perfil, reseña bloqueada sin biblioteca, agregar y reseñar, crear tema, responder, privacidad "solo amigos" antes/después de aceptar, móvil 390 px y 800/1000/1280 px sin scroll horizontal.
 
+## Etapa 5 — Terminado (decisión: archivos de instalación en Etapa 6)
+- BD (`0008_developer_portal`): `developer_applications` (una pendiente por usuario), `org_members` (owner/member), `products.review_note` y `submitted_at`.
+- Flujo: usuario solicita (`/developers`) → admin aprueba en `/admin` (crea estudio externo, lo agrega como dueño y le da rol developer) o rechaza con motivo.
+- Productos: el desarrollador crea borradores, edita, envía a revisión, retira, oculta/vuelve a publicar. El admin publica o rechaza con motivo (vuelve a borrador). Editar un publicado se ve al instante; en revisión no se edita.
+- Escritura de productos reutiliza el importador (una sola lógica). El slug no se puede cambiar ni usar uno ajeno. El admin puede gestionar todos los estudios (incluidos los internos).
+- Estadísticas por producto: en bibliotecas, deseados, reseñas y promedio.
+- API: `GET /v1/dev/status`, `POST /dev/application`, `GET /dev/orgs`, `GET|POST /dev/products`, `GET|PUT /dev/products/:slug`, `POST /dev/products/:slug/{submit,withdraw,hide,show}`; admin: `GET /admin/applications`, `POST /admin/applications/:id/{approve,reject}`, `GET /admin/review`, `POST /admin/review/:slug/{approve,reject}`.
+- Web: `/developers`, `/dev`, `/dev/new`, `/dev/p/:slug`, `/admin`; botones Portal/Admin según rol; enlace en el pie.
+- Corrección: detección de duplicados (23505) envuelta por drizzle también en comunidad.
+
+## Probado (Etapa 5)
+- Linux/PG16: typecheck y build OK; 50/50 tests de API (6 nuevos: solicitud, permisos, aprobación, borrador, rechazo/aprobación, estadísticas, ocultar).
+- E2E en navegador: solicitar → aprobar → crear con requisitos/etiquetas → enviar → rechazar con motivo → corregir → publicar → visible en la tienda; 390/1000/1280 px sin scroll horizontal; sin errores JS.
+
+## Herramienta: Panel AlphaShook
+- `Panel AlphaShook.bat` abre `herramientas/panel.pyw` (Python + tkinter, sin dependencias): estado de la tienda online, iniciar/detener tienda local, cambiar rol, cargar juegos (local u online), subir a GitHub, correr tests, guardar URL de Neon (`.neon-url`, ignorado por git).
+- Probado en Linux (Xvfb): cambiar rol y cargar juegos contra Postgres real. Los .bat anteriores siguen funcionando.
+
 ## Despliegue (preparado, sin publicar)
 - La API sirve la tienda web en producción (`WEB_DIST_DIR`, `@fastify/static`), con fallback de rutas de la SPA.
 - `start:prod`: aplica migraciones y arranca (sin `.env`).
@@ -82,6 +101,7 @@
 
 ## Pendiente
 - Publicar: crear Neon + Brevo + repo privado + Blueprint en Render (pasos en `docs/DEPLOY.md`).
+- Etapa 5: verificar en Windows y publicar. Subida de versiones (archivos) en Etapa 6 con R2. Precio > 0 se puede cargar pero no se puede comprar hasta Etapa 8.
 - Comunidad: verificar en Windows (`iniciar.bat`) y publicar con `subir-a-github.bat` (Render migra solo).
 - Comunidad: asignar moderadores con `cambiar-rol.bat` (local u online; `pnpm user:role <usuario> <rol>`) hasta el panel admin (Etapa 9). Sin avatares (requiere almacenamiento R2); sin notificaciones de amistad/respuestas (launcher/Android).
 - Biblioteca: versiones instaladas y estado de descarga → requieren el launcher (Etapa 6).

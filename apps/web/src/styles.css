@@ -191,3 +191,12 @@ textarea { width: 100%; min-height: 110px; resize: vertical; line-height: 1.5; }
 .mini-grid .cover { font-size: 1.6rem; border-radius: 8px; }
 .mini-grid a { display: grid; gap: 6px; font-size: 0.88rem; }
 .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Portal de desarrolladores (Etapa 5) */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.check-chip { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.check-chip input { min-height: auto; accent-color: var(--accent); }
+.err { color: var(--danger); font-size: 0.85rem; }
+fieldset:disabled { opacity: 0.7; }
+.footer-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.footer-row a { color: var(--accent-2); }

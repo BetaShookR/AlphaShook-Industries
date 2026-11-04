@@ -1,4 +1,11 @@
 import type {
+  DeveloperApplication,
+  DevOrg,
+  DevPortalStatus,
+  DevProductCreate,
+  DevProductDetail,
+  DevProductInput,
+  DevProductRow,
   ForumBoard,
   FriendsOverview,
   MyProfile,
@@ -85,6 +92,21 @@ export const api = {
   editPost: (id: string, body: string) => request<void>(`/forums/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ body }) }),
   moderate: (kind: "reviews" | "threads" | "posts", id: string, patch: { hidden?: boolean; locked?: boolean }) =>
     request<void>(`/mod/${kind}/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  // Portal de desarrolladores
+  devStatus: () => request<DevPortalStatus>("/dev/status"),
+  devApply: (d: { studioName: string; website: string; about: string }) => post<{ id: string }>("/dev/application", d),
+  devOrgs: () => request<DevOrg[]>("/dev/orgs"),
+  devProducts: () => request<DevProductRow[]>("/dev/products"),
+  devProduct: (slug: string) => request<DevProductDetail>(`/dev/products/${encodeURIComponent(slug)}`),
+  devCreate: (d: DevProductCreate) => post<{ slug: string }>("/dev/products", d),
+  devUpdate: (slug: string, d: DevProductInput) => request<void>(`/dev/products/${encodeURIComponent(slug)}`, { method: "PUT", body: JSON.stringify(d) }),
+  devAction: (slug: string, action: "submit" | "withdraw" | "hide" | "show") => post<void>(`/dev/products/${encodeURIComponent(slug)}/${action}`),
+  adminApplications: (status = "pending") => request<DeveloperApplication[]>(`/admin/applications?status=${status}`),
+  adminDecideApplication: (id: string, approve: boolean, note: string) =>
+    post<unknown>(`/admin/applications/${id}/${approve ? "approve" : "reject"}`, { note }),
+  adminReview: () => request<DevProductRow[]>("/admin/review"),
+  adminDecideProduct: (slug: string, approve: boolean, note: string) =>
+    post<void>(`/admin/review/${encodeURIComponent(slug)}/${approve ? "approve" : "reject"}`, { note }),
   verifyEmail: (token: string) => post<void>("/auth/verify-email", { token }),
   resendVerification: () => post<void>("/auth/verify-email/resend"),
   forgotPassword: (email: string) => post<void>("/auth/password/forgot", { email }),
@@ -115,6 +137,13 @@ const MESSAGES: Record<string, string> = {
   too_many_pending: "Tenés demasiadas solicitudes pendientes.",
   thread_locked: "Este tema está cerrado.",
   forbidden: "No tenés permiso para hacer eso.",
+  already_developer: "Ya sos desarrollador.",
+  application_pending: "Ya tenés una solicitud en revisión.",
+  not_org_member: "No sos miembro de ese estudio.",
+  slug_taken: "Esa dirección (slug) ya está en uso. Elegí otra.",
+  invalid_category: "Alguna categoría no existe.",
+  in_review_locked: "Está en revisión: retiralo de la revisión para editarlo.",
+  invalid_status: "No se puede hacer eso en el estado actual del producto.",
 };
 
 export const errorMessage = (e: unknown) =>

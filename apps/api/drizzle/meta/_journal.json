@@ -57,6 +57,13 @@
       "when": 1793753926948,
       "tag": "0007_community",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793757109308,
+      "tag": "0008_developer_portal",
+      "breakpoints": true
     }
   ]
 }

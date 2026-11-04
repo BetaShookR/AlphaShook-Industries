@@ -35,7 +35,8 @@ export class CommunityError extends Error {
 
 const userRef = { username: users.username, displayName: profiles.displayName };
 const iso = (d: Date) => d.toISOString();
-const uniqueViolation = (e: unknown) => (e as { code?: string })?.code === "23505";
+const uniqueViolation = (e: unknown) =>
+  (e as { code?: string })?.code === "23505" || (e as { cause?: { code?: string } })?.cause?.code === "23505";
 
 export function createCommunityService(db: Database) {
   async function publishedProduct(slug: string) {

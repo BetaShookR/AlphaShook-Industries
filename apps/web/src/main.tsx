@@ -6,6 +6,7 @@ import { SessionProvider, useSession } from "./hooks";
 import { Header } from "./components/ui";
 import { CatalogPage, HomePage, ProductPage } from "./pages/store";
 import { LibraryPage, WishlistPage } from "./pages/library";
+import { AdminPage, DevDashboardPage, DevelopersPage, DevProductPage } from "./pages/developers";
 import { BoardPage, ForumsPage, FriendsPage, ProfilePage, ThreadPage } from "./pages/community";
 import { AccountPage, ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, VerifyEmailPage } from "./pages/account";
 
@@ -13,7 +14,10 @@ function Footer() {
   const { identity } = useSession();
   return (
     <footer className="footer">
-      <div className="container">© {new Date().getFullYear()} {identity?.name} · AlphaShook Corporation</div>
+      <div className="container footer-row">
+        <span>© {new Date().getFullYear()} {identity?.name} · AlphaShook Corporation</span>
+        <Link to="/developers">¿Hacés juegos? Publicalos acá</Link>
+      </div>
     </footer>
   );
 }
@@ -40,6 +44,11 @@ function App() {
           <Route path="/community/:board" element={<BoardPage />} />
           <Route path="/u/:username" element={<ProfilePage />} />
           <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/developers" element={<DevelopersPage />} />
+          <Route path="/dev" element={<DevDashboardPage />} />
+          <Route path="/dev/new" element={<DevProductPage />} />
+          <Route path="/dev/p/:slug" element={<DevProductPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<div className="empty">Página no encontrada. <Link to="/">Volver al inicio</Link></div>} />
         </Routes>
       </main>
